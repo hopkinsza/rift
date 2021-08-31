@@ -15,6 +15,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "osind_reboot.h"
+
 void block_all_sigs();
 void usage();
 int wait_for_upto(int);
@@ -85,13 +87,13 @@ main(int argc, char *argv[])
 
 	if (do_halt) {
 		warnx("halt");
-		reboot(LINUX_REBOOT_CMD_HALT);
+		osind_reboot(OSIND_RB_HALT);
 	} else if (do_poweroff) {
 		warnx("poweroff");
-		reboot(LINUX_REBOOT_CMD_POWER_OFF);
+		osind_reboot(OSIND_RB_POWEROFF);
 	} else if (do_reboot) {
 		warnx("reboot");
-		reboot(LINUX_REBOOT_CMD_RESTART);
+		osind_reboot(OSIND_RB_REBOOT);
 	} else {
 		/* should never happen */
 		abort();
@@ -133,5 +135,5 @@ wait_for_upto(int secs)
 	}
 
 	/* Processes remain. */
-	return 1;
+	return -1;
 }
