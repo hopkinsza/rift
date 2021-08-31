@@ -111,7 +111,7 @@ block_all_sigs()
 void
 usage()
 {
-	fprintf(stderr, "usage: <halt|poweroff|reboot> [-npqr]\n");
+	fprintf(stderr, "usage: <halt|poweroff|reboot> [-npq]\n");
 	fprintf(stderr, "    -n  do not sync(2)\n");
 	fprintf(stderr, "    -p  if called as `halt': poweroff\n");
 	fprintf(stderr, "    -q  do not give processes a chance to shut down "
