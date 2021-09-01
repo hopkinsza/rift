@@ -2,9 +2,6 @@
  * SPDX-License-Identifier: 0BSD
  */
 
-#include <linux/reboot.h>
-#include <sys/reboot.h>
-
 #include <err.h>
 #include <getopt.h>
 #include <libgen.h>
