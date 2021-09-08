@@ -16,7 +16,7 @@ osind_reboot(int howto)
 		reboot(RB_HALT, NULL);
 	} else if (howto == OSIND_RB_POWEROFF) {
 		reboot(RB_HALT|RB_POWERDOWN, NULL);
-	} else if (howto == OSIND_RB_POWEROFF) {
+	} else if (howto == OSIND_RB_REBOOT) {
 		reboot(RB_AUTOBOOT, NULL);
 	} else {
 		errno = EINVAL;

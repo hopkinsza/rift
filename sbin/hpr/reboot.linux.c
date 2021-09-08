@@ -16,7 +16,7 @@ osind_reboot(int howto)
 		reboot(LINUX_REBOOT_CMD_HALT);
 	} else if (howto == OSIND_RB_POWEROFF) {
 		reboot(LINUX_REBOOT_CMD_POWER_OFF);
-	} else if (howto == OSIND_RB_POWEROFF) {
+	} else if (howto == OSIND_RB_REBOOT) {
 		reboot(LINUX_REBOOT_CMD_RESTART);
 	} else {
 		errno = EINVAL;
