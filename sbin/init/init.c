@@ -16,18 +16,22 @@
  *   SIGALRM || SIGCHLD -> wait() on any children. A SIGALRM is scheduled to be
  *                         sent every 30 seconds, to make absolutely certain
  *                         that every child process is wait()ed on.
- *   SIGINT  || SIGTERM -> If we are in MULTIUSER state, send a SIGTERM to every
- *                         process in the system every 0.5 seconds for 10
- *                         seconds. (If any processes remain alive after this,
- *                         print a warning.) Then switch to SINGLEUSER state.
+ *   SIGINT  || SIGTERM -> If we are in MULTIUSER state, send signals TERM,
+ *                         HUP, and CONT to every process in the system.
+ *                         Wait a bit for them to exit cleanly, then KILL any
+ *                         processes that remain. (If any process remains alive
+ *                         after this, print a warning.) Then switch to
+ *                         SINGLEUSER state.
  */
 
 #include <sys/ioctl.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 
 #include <err.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <paths.h>
 #include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -38,6 +42,14 @@
 
 #include "debug.h"
 
+#define INIT_CONSOLE "/dev/console"
+#define INIT_PATH    _PATH_STDPATH
+
+#define INIT_RC_PATH "/etc/rc"
+#define INIT_RC_NAME "rc"
+#define INIT_SHELL_PATH "/bin/sh"
+#define INIT_SHELL_NAME "-sh"
+
 enum states {
 	SINGLEUSER,
 	MULTIUSER
@@ -46,6 +58,7 @@ enum states {
 int  fork_rc();
 int  fork_shell();
 int  wait_for_upto(int);
+void setctty();
 void sleep_err(int, char *, ...);
 void start_timer();
 void swap_state(int *, enum states *);
@@ -57,11 +70,12 @@ const struct timespec one_sec = {
 
 /* signal block mask -- full */
 sigset_t bmask;
+/* fd for /dev/console */
+int cons_fd;
 
 int
 main(int argc, char *argv[])
 {
-	int cons_fd;
 	int sig;
 	int status;
 	pid_t cpid;
@@ -73,25 +87,29 @@ main(int argc, char *argv[])
 		return 1;
 
 	/*
-	 * Call setsid().
-	 * Make /dev/console our ctty.
-	 * Make sure STD{IN,OUT,ERR} use it.
+	 * Open fd for /dev/console and make sure STD{IN,OUT,ERR} use it.
 	 */
 
-	setsid();
-
-	cons_fd = open("/dev/console", O_RDWR);
+	cons_fd = open(INIT_CONSOLE, O_RDWR|O_NOCTTY);
 	if (cons_fd == -1)
 		sleep_err(1, "open /dev/console failed");
-	if (ioctl(cons_fd, TIOCSCTTY) == -1)
-		sleep_err(1, "ioctl to make /dev/console my ctty failed");
 
 	dup2(cons_fd, 0);
 	dup2(cons_fd, 1);
 	dup2(cons_fd, 2);
 
-	close(cons_fd);
+	/*
+	 * Call setsid() to create initial session.
+	 * Set a default PATH and umask.
+	 */
 
+	setsid();
+	setenv("PATH", _PATH_STDPATH, 1);
+	umask(0022);
+
+	/*
+	 * Block all signals until ready to handle them.
+	 */
 
 	sigfillset(&bmask);
 	sigprocmask(SIG_BLOCK, &bmask, NULL);
@@ -103,7 +121,6 @@ main(int argc, char *argv[])
 		state = MULTIUSER;
 	}
 	swap_state(&cpid, &state);
-
 
 	start_timer();
 
@@ -163,7 +180,8 @@ fork_rc()
 	int pid;
 	if ((pid = fork()) == 0) {
 		sigprocmask(SIG_UNBLOCK, &bmask, NULL);
-		execl("/etc/rc", "rc", NULL);
+		setctty();
+		execl(INIT_RC_PATH, INIT_RC_NAME, NULL);
 	}
 	return pid;
 }
@@ -174,7 +192,8 @@ fork_shell()
 	int pid;
 	if ((pid = fork()) == 0) {
 		sigprocmask(SIG_UNBLOCK, &bmask, NULL);
-		execl("/bin/sh", "sh", NULL);
+		setctty();
+		execl(INIT_SHELL_PATH, INIT_SHELL_NAME, NULL);
 	}
 	return pid;
 }
@@ -201,7 +220,22 @@ wait_for_upto(int secs)
 	return 1;
 }
 
-/* Print error, sleep for a few seconds, then exit. */
+/*
+ * Called by child after forking.
+ * Create a new session and make /dev/console the ctty.
+ */
+void
+setctty()
+{
+	if (setsid() == -1)
+		warnx("setsid(2) failed");
+	if (ioctl(cons_fd, TIOCSCTTY) == -1)
+		warnx("ioctl to make /dev/console my ctty failed");
+}
+
+/*
+ * Print error, sleep for a few seconds, then exit.
+ */
 void
 sleep_err(int status, char *fmt, ...)
 {
