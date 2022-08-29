@@ -31,8 +31,6 @@ main(int argc, char *argv[])
 	int do_clean = 1;
 	int do_sync  = 1;
 
-	block_all_sigs();
-
 	if (geteuid() != 0)
 		errx(1, "must run as root");
 
@@ -69,6 +67,10 @@ main(int argc, char *argv[])
 		}
 	}
 
+	block_all_sigs();
+	// note: defined in <unistd.h> instead of <stdlib.h> in glibc
+	daemon(0, 1);
+
 	if (do_clean) {
 		warnx("waiting up to 4 seconds for processes to exit...");
 		kill(-1, SIGTERM);
@@ -92,7 +94,7 @@ main(int argc, char *argv[])
 		warnx("reboot");
 		osind_reboot(OSIND_RB_REBOOT);
 	} else {
-		/* should never happen */
+		// should never happen
 		abort();
 	}
 }
@@ -126,11 +128,11 @@ wait_for_upto(int secs)
 		nanosleep(&one_sec, NULL);
 
 		if (kill(-1, 0) == -1) {
-			/* All processes have exited. */
+			// all processes have exited
 			return 0;
 		}
 	}
 
-	/* Processes remain. */
+	// processes remain
 	return -1;
 }
