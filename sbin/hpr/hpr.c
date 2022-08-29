@@ -2,6 +2,8 @@
  * SPDX-License-Identifier: 0BSD
  */
 
+#include <sys/wait.h>
+
 #include <err.h>
 #include <getopt.h>
 #include <libgen.h>
@@ -24,11 +26,11 @@ main(int argc, char *argv[])
 	char *progname;
 	int ch;
 
-	int do_halt     = 0;
-	int do_poweroff = 0;
-	int do_reboot   = 0;
+	// ascii h, p, or r
+	int action;
 
 	int do_clean = 1;
+	int do_rcshutdown = 1;
 	int do_sync  = 1;
 
 	if (geteuid() != 0)
@@ -39,26 +41,34 @@ main(int argc, char *argv[])
 		err(1, "malloc(3) failed");
 	progname = basename(argv[0]);
 
-	if (strcmp(progname, "poweroff") == 0)
-		do_poweroff = 1;
+	if (strcmp(progname, "halt") == 0)
+		action = 'h';
+	else if (strcmp(progname, "poweroff") == 0)
+		action = 'p';
 	else if (strcmp(progname, "reboot") == 0)
-		do_reboot = 1;
+		action = 'r';
 	else
-		do_halt = 1;
+		action = 'p';
 
-	while ((ch = getopt(argc, argv, "npq")) != -1) {
+	while ((ch = getopt(argc, argv, "hnpqrS")) != -1) {
 		switch(ch) {
+		case 'h':
+			action = 'h';
+			break;
 		case 'n':
 			do_sync = 0;
 			break;
 		case 'p':
-			if (do_halt) {
-				do_halt = 0;
-				do_poweroff = 1;
-			}
+			action = 'p';
 			break;
 		case 'q':
 			do_clean = 0;
+			break;
+		case 'r':
+			action = 'r';
+			break;
+		case 'S':
+			do_rcshutdown = 0;
 			break;
 		default:
 			usage();
@@ -67,9 +77,28 @@ main(int argc, char *argv[])
 		}
 	}
 
-	block_all_sigs();
 	// note: defined in <unistd.h> instead of <stdlib.h> in glibc
 	daemon(0, 1);
+
+	if (do_rcshutdown) {
+		warnx("running /etc/rc.shutdown");
+
+		int pid = fork();
+		if (pid == -1) {
+			warn("fork(2) failed");
+		} else if (pid == 0) {
+			if (access("/etc/rc.shutdown", X_OK) == -1) {
+				warn("could not access /etc/rc.shutdown");
+			} else {
+				execl("/etc/rc.shutdown", "rc.shutdown", NULL);
+			}
+		} else {
+			wait(NULL);
+		}
+	}
+
+	// this is where the fun begins
+	block_all_sigs();
 
 	if (do_clean) {
 		warnx("waiting up to 4 seconds for processes to exit...");
@@ -84,13 +113,13 @@ main(int argc, char *argv[])
 		sync();
 	}
 
-	if (do_halt) {
+	if (action == 'h') {
 		warnx("halt");
 		osind_reboot(OSIND_RB_HALT);
-	} else if (do_poweroff) {
+	} else if (action == 'p') {
 		warnx("poweroff");
 		osind_reboot(OSIND_RB_POWEROFF);
-	} else if (do_reboot) {
+	} else if (action == 'r') {
 		warnx("reboot");
 		osind_reboot(OSIND_RB_REBOOT);
 	} else {
@@ -112,11 +141,14 @@ block_all_sigs()
 void
 usage()
 {
-	fprintf(stderr, "usage: <halt|poweroff|reboot> [-npq]\n");
+	fprintf(stderr, "usage: <halt|poweroff|reboot> [-hnpqrS]\n");
+	fprintf(stderr, "    -h  halt\n");
 	fprintf(stderr, "    -n  do not sync(2)\n");
-	fprintf(stderr, "    -p  if called as `halt': poweroff\n");
+	fprintf(stderr, "    -p  poweroff\n");
 	fprintf(stderr, "    -q  do not give processes a chance to shut down "
 	    "cleanly\n");
+	fprintf(stderr, "    -r  reboot\n");
+	fprintf(stderr, "    -S  do not run /etc/rc.shutdown\n");
 }
 
 int
