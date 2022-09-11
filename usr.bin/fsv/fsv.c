@@ -594,6 +594,7 @@ main(int argc, char *argv[])
 			if (fsv.timeout == 0 || n == 1) {
 				slog(LOG_DEBUG, "  exiting");
 				termprocs(chld);
+				fsv.pid = 0;
 				fsv.gaveup = 1;
 				write_info(fd_info, &fsv, chld);
 				exit(0);
