@@ -762,11 +762,11 @@ str_to_l(const char *str)
 void
 termprocs(struct fsv_child chld[])
 {
-	if (chld[0].pid != 0) {
+	if (chld[0].pid > 0) {
 		kill(chld[0].pid, SIGTERM);
 		kill(chld[0].pid, SIGCONT);
 	}
-	if (chld[1].pid != 0) {
+	if (chld[1].pid > 0) {
 		kill(chld[1].pid, SIGTERM);
 		kill(chld[1].pid, SIGCONT);
 	}
