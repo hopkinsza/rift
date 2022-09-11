@@ -90,7 +90,7 @@ main(int argc, char *argv[])
 	 * Process flags.
 	 */
 
-	int do_daemon = 1;
+	int do_daemon = 0;
 	int do_status = 0;
 
 	char *cmdname = NULL;
@@ -98,11 +98,12 @@ main(int argc, char *argv[])
 	// -1 means we are not logging at all
 	long out_mask = -1;
 
-	const char *getopt_str = "+dfhl:m:n:o:p:R:r:S:s:t:V";
+	const char *getopt_str = "+bdhl:M:m:n:o:p:R:r:s:t:Vv:XxYy";
 
 	struct option longopts[] = {
+		{ "background",	no_argument,		NULL,	'b' },
+		{ "daemon",	no_argument,		NULL,	'b' },
 		{ "debug",	no_argument,		NULL,	'd' },
-		{ "foreground", no_argument,		NULL,	'f' },
 		{ "help",	no_argument,		NULL,	'h' },
 		{ "log",	required_argument,	NULL,	'l' },
 		{ "max-execs-log",required_argument,	NULL,	'M' },
@@ -116,6 +117,10 @@ main(int argc, char *argv[])
 		{ "timeout",	required_argument,	NULL,	't' },
 		{ "version",	no_argument,		NULL,	'V' },
 		{ "loglevel",	required_argument,	NULL,	'v' },
+		{ "no-stderr",	no_argument,		NULL,	'X' },
+		{ "stderr",	no_argument,		NULL,	'x' },
+		{ "no-syslog",	no_argument,		NULL,	'Y' },
+		{ "syslog",	no_argument,		NULL,	'y' },
 		{ NULL,		0,			NULL,	0 }
 	};
 
@@ -124,13 +129,14 @@ main(int argc, char *argv[])
 	char *largv[32];
 	while ((ch = getopt_long(argc, argv, getopt_str, longopts, NULL)) != -1) {
 		switch(ch) {
+		case 'b':
+			do_daemon = 1;
+			slog_do_stderr(0);
+			slog_do_syslog(1);
+			break;
 		case 'd':
 			slog_upto(LOG_DEBUG);
-			do_daemon = 0;
 			slog(LOG_DEBUG, "debugging on");
-			break;
-		case 'f':
-			do_daemon = 0;
 			break;
 		case 'h':
 			usage();
@@ -254,6 +260,18 @@ main(int argc, char *argv[])
 				slog_upto(LOG_DEBUG);
 			else
 				errx(1, "unrecognized loglevel for -v");
+			break;
+		case 'X':
+			slog_do_stderr(0);
+			break;
+		case 'x':
+			slog_do_stderr(1);
+			break;
+		case 'Y':
+			slog_do_syslog(0);
+			break;
+		case 'y':
+			slog_do_syslog(1);
 			break;
 		case '?':
 		default:
