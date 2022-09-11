@@ -4,7 +4,7 @@
 #define FSV_VERSION "0.0.0"
 
 #ifndef FSV_CMDDIR_PREFIX
-#define FSV_CMDDIR_PREFIX "/var/tmp"
+#define FSV_CMDDIR_PREFIX "/tmp"
 #endif
 
 #include <signal.h>
