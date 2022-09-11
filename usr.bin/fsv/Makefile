@@ -1,16 +1,17 @@
 # Makefile
 
 PROG = fsv
-SRCS = fsv.c info.c proc.c util.c
+SRCS = fsv.c slog.c
 OBJS = $(SRCS:.c=.o)
 
 CFLAGS = -Wall -static
+LDLIBS = -lrt -lpthread
 
 
 .PHONY: all clean
 
 $(PROG): $(OBJS)
-	$(CC) $(CFLAGS) $(OBJS) -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) -o $@ $(LDLIBS)
 
 all: $(PROG)
 
