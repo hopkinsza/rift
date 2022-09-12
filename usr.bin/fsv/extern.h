@@ -34,10 +34,6 @@ struct fsv_child {
 	long total_execs;
 	long recent_execs;
 
-	// If total_execs > 0, most recent exit status as returned by wait(2);
-	// use W* macros to examine.
-	int status;
-
 	// configuration
 	long max_recent_execs;
 	long recent_secs;

@@ -62,7 +62,7 @@ main(int argc, char *argv[])
 	clock_gettime(CLOCK_REALTIME, &fsv.since);
 
 	{
-		struct fsv_child new = { -1, {0,0}, 0, 0, 0, 0, 0};
+		struct fsv_child new = { -1, {0,0}, 0, 0, 0, 0};
 		for (int i=0; i<2; i++) {
 			chld[i] = new;
 			chld[i].recent_secs = 3600;
@@ -281,6 +281,8 @@ main(int argc, char *argv[])
 	}
 	argc -= optind;
 	argv += optind;
+
+	slog(LOG_DEBUG, "finished processing options");
 
 	/*
 	 * If we are just printing status, do so.
@@ -527,7 +529,7 @@ main(int argc, char *argv[])
 	int sig;
 	while (sigwait(&bmask, &sig) == 0) switch (sig) {
 	case SIGCHLD:
-		slog(LOG_DEBUG, "got SIGCHLD");
+		slog(LOG_DEBUG, "> SIGCHLD");
 
 		int status;
 		pid_t epid;
@@ -535,19 +537,27 @@ main(int argc, char *argv[])
 		// wait() on all terminated children
 		while ((epid = waitpid(-1, &status, WNOHANG)) > 0) {
 			if (epid != chld[0].pid && epid != chld[1].pid) {
-				slog(LOG_DEBUG, "  ??? unknown child!");
+				slog(LOG_DEBUG, "??? unknown child!");
 			}
 
 			for (int i=0; i<2; i++) if (epid == chld[i].pid) {
 				// cmd or log has exited
 				chld[i].pid = 0;
-				chld[i].status = status;
+
+				char buf[32];
+				if (WIFEXITED(status)) {
+					snprintf(buf, sizeof(buf),
+					    "exited %d", WEXITSTATUS(status));
+				} else if (WIFSIGNALED(status)) {
+					snprintf(buf, sizeof(buf),
+					    "terminated by signal %d", WTERMSIG(status));
+				}
 
 				if (i == 0) {
-					slog(LOG_DEBUG, "  cmd process exited");
+					slog(LOG_NOTICE, "cmd process %s", buf);
 					raise(SIGUSR1);
 				} else if (i == 1) {
-					slog(LOG_DEBUG, "  log process exited");
+					slog(LOG_NOTICE, "log process %s", buf);
 					raise(SIGUSR2);
 				}
 			}
@@ -559,20 +569,23 @@ main(int argc, char *argv[])
 		// USR1 is to start up the cmd process;
 		// USR2 is for log
 		int n;
+		const char *cname;
 		if (sig == SIGUSR1) {
+			slog(LOG_DEBUG, "> SIGUSR1");
 			n = 0;
-			slog(LOG_DEBUG, "got SIGUSR1");
+			cname = "cmd";
 		} else if (sig == SIGUSR2) {
+			slog(LOG_DEBUG, "> SIGUSR2");
 			n = 1;
-			slog(LOG_DEBUG, "got SIGUSR2");
+			cname = "log";
 			if (out_mask == -1) {
-				slog(LOG_DEBUG, "  but out_mask is -1, ignore");
+				slog(LOG_DEBUG, "but out_mask is -1, ignore");
 				break;
 			}
 		}
 
 		if (chld[n].pid > 0) {
-			slog(LOG_DEBUG, "  but the process is already running");
+			slog(LOG_DEBUG, "but the process is already running");
 			break;
 		}
 
@@ -590,16 +603,18 @@ main(int argc, char *argv[])
 		// check if limit has been exceeded
 		if (chld[n].recent_execs > chld[n].max_recent_execs) {
 			// exit or timeout
-			slog(LOG_CRIT, "max_recent_execs exceeded for chld%d", n);
 			if (fsv.timeout == 0 || n == 1) {
-				slog(LOG_DEBUG, "  exiting");
+				slog(LOG_WARNING, "max_recent_execs exceeded for %s, exiting",
+				     cname);
 				termprocs(chld);
 				fsv.pid = 0;
 				fsv.gaveup = 1;
 				write_info(fd_info, &fsv, chld);
 				exit(0);
 			} else {
-				slog(LOG_CRIT, "cmd timeout for %ld secs\n", fsv.timeout);
+				slog(LOG_WARNING,
+				    "max_recent_execs exceeded for %s, timeout for %ld secs",
+				    cname, fsv.timeout);
 				timer_settime(cmd_tid, 0, &cmd_tmout_itspec, NULL);
 				break;
 			}
@@ -621,7 +636,7 @@ main(int argc, char *argv[])
 	case SIGINT:
 	case SIGHUP:
 	case SIGTERM:
-		slog(LOG_DEBUG, "got signal INT, HUP, or TERM");
+		slog(LOG_DEBUG, "> INT, HUP, or TERM");
 		termprocs(chld);
 		fsv.pid = 0;
 		write_info(fd_info, &fsv, chld);
