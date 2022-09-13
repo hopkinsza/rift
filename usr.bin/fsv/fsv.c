@@ -12,7 +12,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sysexits.h>
 #include <syslog.h> // for LOG_* level constants
 #include <time.h>
 #include <unistd.h>
@@ -148,7 +147,7 @@ main(int argc, char *argv[])
 
 			// parse into an argv; gnarly
 			if (logstring != NULL)
-				errx(1, "-l specified more than once");
+				errx(64, "-l specified more than once");
 			for (int i=0; i<32; i++)
 				largv[i] = NULL;
 
@@ -189,7 +188,7 @@ main(int argc, char *argv[])
 						c++;
 
 					if (*c == '\0') {
-						errx(1, "unmatched double-quote in -l arg");
+						errx(64, "unmatched double-quote in -l arg");
 					} else {
 						*c = '\0';
 						c++;
@@ -218,7 +217,7 @@ main(int argc, char *argv[])
 			// this is not settable to -1 with str_to_l
 			out_mask = str_to_l(optarg);
 			if (out_mask < 0 || out_mask > 3)
-				errx(1, "-m arg must be in range 0-3");
+				errx(64, "-m arg must be in range 0-3");
 			break;
 		case 'p':
 			cmdname = optarg;
@@ -259,7 +258,7 @@ main(int argc, char *argv[])
 			else if (strcmp(optarg, "debug") == 0)
 				slog_upto(LOG_DEBUG);
 			else
-				errx(1, "unrecognized loglevel for -v");
+				errx(64, "unrecognized loglevel for -v");
 			break;
 		case 'X':
 			slog_do_stderr(0);
@@ -362,7 +361,10 @@ main(int argc, char *argv[])
 			}
 		}
 
-		exit(0);
+		if (ai.fsv.pid > 0)
+			exit(0);
+		else
+			exit(1);
 	}
 
 	/*
@@ -373,7 +375,7 @@ main(int argc, char *argv[])
 	if (argc == 0) {
 		warnx("no cmd to execute");
 		usage();
-		exit(1);
+		exit(64);
 	}
 
 	if (cmdname == NULL) {
@@ -388,7 +390,7 @@ main(int argc, char *argv[])
 	}
 
 	if (*cmdname == '.' || *cmdname == '/') {
-		errx(1, "cmdname does not make sense");
+		errx(64, "cmdname does not make sense");
 	}
 
 	/*
@@ -708,7 +710,7 @@ fork_chld(int log, struct fsv_child *fc, int logpipe[], char *argv[],
 		// This runs only if the exec failed.
 		// <sysexits.h> EX_USAGE was chosen because it is a permanent
 		// failure that will never be fixed by simply re-execing anyway.
-		exit(EX_USAGE);
+		exit(64);
 	}
 
 	if (pid == -1) {
@@ -734,22 +736,22 @@ str_to_l(const char *str)
 	if (ep == str) {
 		warnx("string to number conversion failed for `%s': "
 		      "not a number, or improper format", str);
-		exit(1);
+		exit(64);
 	}
 	if (*ep != '\0') {
 		warnx("string to number conversion failed for `%s': "
 		      "trailing junk `%s'", str, ep);
-		exit(1);
+		exit(64);
 	}
 	if (errno != 0) {
 		warnx("string to number conversion failed for `%s': "
 		      "number out of range", str);
-		exit(1);
+		exit(64);
 	}
 	if (val < 0) {
 		warnx("string to number conversion failed for `%s': "
 		      "should be positive", str);
-		exit(1);
+		exit(64);
 	}
 
 	return val;

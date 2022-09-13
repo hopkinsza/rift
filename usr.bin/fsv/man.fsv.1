@@ -129,6 +129,18 @@ the pipe will fill up and
 calls will start blocking or failing when the
 .Va cmd
 process tries to log.
+.Pp
+You can view the status information with
+.Fl s
+or
+.Fl p .
+When these flags are used,
+.Nm
+will exit 0 if an
+.Nm
+instance is running that
+.Ar cmdname ,
+and 1 otherwise.
 .\"
 .\" options
 .\"
@@ -305,6 +317,9 @@ for
 .Sh EXIT STATUS
 .Nm
 exits non-zero on error.
+This is typically 64
+.Pq In sysexits.h EX_USAGE
+for usage error, and 1 otherwise.
 Exiting due to
 .Va timeout
 being zero is considered successful.
