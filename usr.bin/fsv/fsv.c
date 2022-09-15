@@ -97,7 +97,7 @@ main(int argc, char *argv[])
 	// -1 means we are not logging at all
 	long out_mask = -1;
 
-	const char *getopt_str = "+bdhl:M:m:n:o:p:R:r:s:t:Vv:XxYy";
+	const char *getopt_str = "+Bbdhl:M:m:n:o:p:R:r:s:t:Vv:XxYy";
 
 	struct option longopts[] = {
 		{ "background",	no_argument,		NULL,	'b' },
