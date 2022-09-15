@@ -128,6 +128,9 @@ main(int argc, char *argv[])
 	char *largv[32];
 	while ((ch = getopt_long(argc, argv, getopt_str, longopts, NULL)) != -1) {
 		switch(ch) {
+		case 'B':
+			do_daemon = 2;
+			break;
 		case 'b':
 			do_daemon = 1;
 			slog_do_stderr(0);
@@ -467,8 +470,11 @@ main(int argc, char *argv[])
 	 * close them itself.
 	 */
 
-	if (do_daemon) {
+	if (do_daemon == 1) {
 		if (daemon(0, 0) == -1)
+			err(1, "daemon() failed");
+	} else if (do_daemon == 2) {
+		if (daemon(0, 1) == -1)
 			err(1, "daemon() failed");
 	}
 

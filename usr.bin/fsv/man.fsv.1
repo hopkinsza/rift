@@ -148,6 +148,14 @@ and 1 otherwise.
 The options are as follows:
 .Pp
 .Bl -tag -width Ds
+.It Fl B
+Daemonize by calling
+.Xr daemon 3 ,
+but don't modify
+.Dv stdin ,
+.Dv stdout ,
+and
+.Dv stderr .
 .It Fl b , Fl -background , Fl -daemon
 Daemonize by calling
 .Xr daemon 3
