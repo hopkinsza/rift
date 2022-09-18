@@ -1,7 +1,7 @@
 # Makefile
 
 PROG = fsv
-SRCS = fsv.c slog.c
+SRCS = fsv.c
 OBJS = $(SRCS:.c=.o)
 
 CFLAGS = -Wall
@@ -12,11 +12,11 @@ LDFLAGS = -static
 .PHONY: all clean
 
 $(PROG): $(OBJS)
-	$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(LDLIBS)
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) -o $@ $(OBJS) slog/slog.c $(LDLIBS)
 
 all: $(PROG)
 
-$(OBJS): extern.h slog.h
+$(OBJS): extern.h
 
 clean:
 	@rm -f $(PROG) *.o
