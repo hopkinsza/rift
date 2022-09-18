@@ -34,4 +34,4 @@ int slog_upto(int);
 int slog_do_stderr(int);
 int slog_do_syslog(int);
 
-#endif // _SLOG_H_
+#endif // !_SLOG_H_
