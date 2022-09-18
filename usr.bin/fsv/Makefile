@@ -16,7 +16,7 @@ $(PROG): $(OBJS)
 
 all: $(PROG)
 
-$(OBJS): extern.h
+$(OBJS): extern.h slog.h
 
 clean:
 	@rm -f $(PROG) *.o

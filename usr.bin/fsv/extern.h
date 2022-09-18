@@ -50,15 +50,4 @@ extern int fd_devnull;
 // signal block mask
 extern sigset_t bmask;
 
-/*
- * slog.c
- */
-
-void slog(int, const char *, ...);
-void slog_init();
-void slog_close();
-int slog_upto(int);
-int slog_do_stderr(int);
-int slog_do_syslog(int);
-
 #endif // !_EXTERN_H_

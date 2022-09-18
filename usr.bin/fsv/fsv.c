@@ -17,6 +17,7 @@
 #include <unistd.h>
 
 #include "extern.h"
+#include "slog.h"
 
 int fork_chld(int, struct fsv_child *, int[], char *[], long);
 long str_to_l(const char *);
@@ -47,7 +48,7 @@ main(int argc, char *argv[])
 	sigaddset(&bmask, SIGHUP);
 	sigaddset(&bmask, SIGTERM);
 
-	slog_init();
+	slog_open();
 	slog_upto(LOG_INFO);
 
 	/*

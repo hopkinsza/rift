@@ -1,12 +1,14 @@
-#include <err.h>
+// slog revision 1
+
+#include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
-#include <syslog.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "extern.h"
+#include "slog.h"
 
-// default syslog facility
-static int facil = LOG_DAEMON;
+static int facil = SLOG_FACILITY;
 
 static int upto = LOG_DEBUG;
 
@@ -16,16 +18,14 @@ static int do_syslog = 0;
 /*
  * syslog(3) lookalike that also allows printing to stderr only.
  * This is the default.
+ *
  * Currently, only netbsd syslog(3) can do this with its LOG_NLOG flag,
  * otherwise we would use it directly.
+ * Hopefully, LOG_NLOG will eventually become universal and this wrapper will
+ * no longer be necessary.
  *
+ * When printing to stderr, a %m specifier is only recognized at the end.
  * Argument 'level' should be a level only, not OR'd with facility.
- *
- * Assume that the LOG_* level constants are defined as they originally were
- * in 4.2BSD, to be able to compare them.
- * This is true for modern BSDs, glibc, and musl.
- *
- * Additionally, vsyslog(3) is not in POSIX.
  */
 void
 slog(int level, const char *fmt, ...)
@@ -34,8 +34,46 @@ slog(int level, const char *fmt, ...)
 
 	if (do_stderr && level <= upto) {
 		va_start(ap, fmt);
-		vfprintf(stderr, fmt, ap);
-		fprintf(stderr, "\n");
+
+		/*
+		 * Determine if %m is there.
+		 */
+
+		int do_errno = 0;
+		size_t fmtlen = strlen(fmt) + 1;
+		char *fmtcpy = malloc(fmtlen);
+
+		if (fmtcpy == NULL) {
+			// malloc failed
+			do_errno = 0;
+		} else {
+			strcpy(fmtcpy, fmt);
+			if (fmtlen >= 3) {
+				// pointer to the last non-null character
+				char *p = fmtcpy + (fmtlen - 2);
+				if (*(p-1) == '%' && *p == 'm') {
+					// if fmt ended with "%m",
+					// NULL out both of those chars
+					*(p-1) = '\0';
+					*p = '\0';
+					do_errno = 1;
+				}
+			}
+		}
+
+		/*
+		 * Then print accordingly.
+		 */
+
+		if (do_errno) {
+			vfprintf(stderr, fmtcpy, ap);
+			fprintf(stderr, "%s", strerror(errno));
+			fprintf(stderr, "\n");
+		} else {
+			vfprintf(stderr, fmt, ap);
+			fprintf(stderr, "\n");
+		}
+
 		va_end(ap);
 	}
 
@@ -47,43 +85,13 @@ slog(int level, const char *fmt, ...)
 }
 
 /*
- * Call me at the beginning of your program to verify the assumption,
- * and go ahead and open the syslog fd.
+ * Wrappers around openlog() and closelog().
  */
 void
-slog_init()
+slog_open()
 {
-	int e = 0;
-
-	if (LOG_EMERG != 0)
-		e = 1;
-	else if (LOG_ALERT != 1)
-		e = 1;
-	else if (LOG_CRIT != 2)
-		e = 1;
-	else if (LOG_ERR != 3)
-		e = 1;
-	else if (LOG_WARNING != 4)
-		e = 1;
-	else if (LOG_NOTICE != 5)
-		e = 1;
-	else if (LOG_INFO != 6)
-		e = 1;
-	else if (LOG_DEBUG != 7)
-		e = 1;
-
-	if (e != 0) {
-		warnx("slog() basic assumption was wrong");
-		warnx("your libc does not define syslog.h LOG_* as expected");
-		errx(1, "exiting");
-	}
-
 	openlog(NULL, LOG_NDELAY|LOG_PID, facil);
 }
-
-/*
- * Wrapper around closelog() to close the syslog fd.
- */
 void
 slog_close()
 {
