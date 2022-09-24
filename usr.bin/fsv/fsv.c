@@ -56,18 +56,17 @@ main(int argc, char *argv[])
 	 */
 
 	struct fsv_parent fsv;
-	struct fsv_child chld[2];
-
+	memset(&fsv, 0, sizeof(fsv));
 	// fsv's since value is the only one recorded with CLOCK_REALTIME
 	clock_gettime(CLOCK_REALTIME, &fsv.since);
 
-	{
-		struct fsv_child new = { -1, {0,0}, 0, 0, 0, 0};
-		for (int i=0; i<2; i++) {
-			chld[i] = new;
-			chld[i].recent_secs = 3600;
-			chld[i].max_recent_execs = 3;
-		}
+	struct fsv_child chld[2];
+
+	for (int i=0; i<2; i++) {
+		memset(&chld[i], 0, sizeof(chld[i]));
+		chld[i].pid = -1;
+		chld[i].recent_secs = 3600;
+		chld[i].max_recent_execs = 3;
 	}
 
 	/*
