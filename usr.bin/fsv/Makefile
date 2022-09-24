@@ -4,15 +4,17 @@ PROG = fsv
 SRCS = fsv.c
 OBJS = $(SRCS:.c=.o)
 
-CFLAGS = -Wall
-LDLIBS = -lrt -lpthread
-LDFLAGS = -static
+SLOG = ../slog
+
+CFLAGS = -Wall -I$(SLOG)
+LDLIBS = -lslog -lrt -lpthread
+LDFLAGS = -static -L$(SLOG)
 
 
 .PHONY: all clean
 
 $(PROG): $(OBJS)
-	$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) -o $@ $(OBJS) slog/slog.c $(LDLIBS)
+	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(LDLIBS)
 
 all: $(PROG)
 

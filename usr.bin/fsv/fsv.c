@@ -16,8 +16,9 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <slog.h>
+
 #include "extern.h"
-#include "slog/slog.h"
 
 int fork_chld(int, struct fsv_child *, int[], char *[], long);
 long str_to_l(const char *);
