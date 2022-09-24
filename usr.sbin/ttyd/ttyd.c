@@ -19,7 +19,7 @@
 #include <utmpx.h>
 #endif
 
-#include "slog/slog.h"
+#include <slog.h>
 
 #define TTYD_TIMEOUT 30
 

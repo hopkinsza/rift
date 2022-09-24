@@ -2,15 +2,18 @@
 
 PROG = ttyd
 
-CFLAGS = -Wall
+SLOG = ../slog
+
+CFLAGS = -Wall -I$(SLOG)
 CPPFLAGS = -DSUPPORT_UTMP
-LDLIBS = -lrt -lutil
+LDLIBS = -lslog -lrt -lpthread -lutil
+LDFLAGS = -static -L$(SLOG)
 
 
 .PHONY: all clean
 
-$(PROG): $(PROG).c slog/slog.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) -o $@ $(PROG).c slog/slog.c $(LDLIBS)
+$(PROG): $(PROG).c
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) -o $@ $(PROG).c $(LDLIBS)
 
 all: $(PROG)
 
