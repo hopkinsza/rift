@@ -1,0 +1,397 @@
+.Dd
+.Dt FSV 1
+.Os
+.\"
+.\"
+.Sh NAME
+.Nm fsv
+.Nd a process supervisor
+.\"
+.\"
+.Sh SYNOPSIS
+.Nm
+.Op Fl bdXxYy
+.Op Fl l Ar log
+.Op Fl M Ar max
+.Op Fl m Ar max
+.Op Fl n Ar name
+.Op Fl o Ar mask
+.Op Fl R Ar secs
+.Op Fl r Ar secs
+.Op Fl t Ar secs
+.Op Fl v Ar level
+.Ar cmd
+.Nm
+.Aq Fl p | Fl s
+.Ar name
+.Nm
+.Aq Fl h | Fl V
+.\"
+.\"
+.Sh DESCRIPTION
+.Nm
+is a process supervisor.
+It is able to:
+.Bl -bullet -width 1n -offset Ds
+.It
+Run a command
+.Va cmd ,
+restarting it if it exits for any reason.
+.It
+Optionally run another
+.Va log
+process to reliably log messages,
+even if either process is restarted.
+.It
+Maintain state information for the
+.Va fsv
+process itself as well as
+.Va cmd
+and
+.Va log .
+.El
+.\"
+.\"
+.Pp
+.Nm
+is designed to run daemons
+\(em long-running non-interactive processes \(em
+which may occasionally crash for various reasons.
+Typically, one wants the daemon to simply restart and go back about its
+business,
+but this can cause an infinite loop in the case of an enduring error.
+Repeated crashes could also indicate a malicious actor trying to attack the
+daemon, especially in the case of a network service.
+.Pp
+Thus,
+.Nm
+keeps track of how many times it has restarted each command recently
+and allows you to decide what it should do
+if it reaches too high of a value.
+.\"
+.\" recent_execs
+.\"
+.Pp
+This value is called
+.Va recent_execs ,
+and
+.Nm
+keeps track of it for both the
+.Va cmd
+and
+.Va log
+processes.
+.Va recent_execs
+starts at 0 and will increment every time the process is executed, unless
+.Va recent_secs
+or more seconds have passed.
+In this case, the event is considered the start of a new string of crashes and
+.Va recent_execs
+is set back to 1.
+.Va recent_secs
+can instead be set to 0 if you never want
+.Va recent_execs
+to reset.
+.Pp
+The maximum number of allowed
+.Va recent_execs
+can be set with
+.Va recent_execs_max .
+In the event that this number is about to be exceeded by
+.Va cmd ,
+.Nm
+will take action according to
+.Va timeout .
+If
+.Va timeout
+is non-zero,
+.Nm
+will wait
+.Va timeout
+seconds before restarting the process again.
+If
+.Va timeout
+is zero,
+.Nm
+will
+.Dq give up
+and exit.
+.Pp
+.Va timeout
+is always zero for the
+.Va log
+process.
+This is because it is a very
+.Em bad
+thing if the log process starts crashing \(em
+the pipe will fill up and
+.Xr write 2
+calls will start blocking or failing when the
+.Va cmd
+process tries to log.
+.Pp
+You can view the status information with
+.Fl s
+or
+.Fl p .
+When these flags are used,
+.Nm
+will exit 0 if an
+.Nm
+instance is running that
+.Ar cmdname ,
+and 1 otherwise.
+.\"
+.\" options
+.\"
+.Pp
+The options are as follows:
+.Pp
+.Bl -tag -width Ds
+.It Fl B
+Daemonize by calling
+.Xr daemon 3 ,
+but don't modify
+.Dv stdin ,
+.Dv stdout ,
+and
+.Dv stderr .
+.It Fl b , Fl -background , Fl -daemon
+Daemonize by calling
+.Xr daemon 3
+to detach from the session.
+.Dv stdin ,
+.Dv stdout ,
+and
+.Dv stderr
+are set to
+.Pa /dev/null .
+Logging is set to go to syslog only,
+but you could disable this with a later
+.Fl Y .
+.It Fl d , Fl -debug
+Log messages up to and including
+.Dv LOG_DEBUG .
+Equivalent to
+.Fl v Ar debug .
+.It Fl h , Fl -help
+Print a brief help message.
+.It Fl l , Fl -log Ar log
+Program to pipe the output of
+.Va cmd
+into.
+Double-quotes are supported to allow spaces in arguments.
+.It Fl M , Fl -max-execs-log Ar max
+Set
+.Va max_recent_execs
+for the
+.Va log
+process.
+.It Fl m , Fl -max-execs Ar max
+Set
+.Va max_recent_execs
+for the
+.Va cmd
+process.
+.It Fl n , Fl -name Ar name
+Use
+.Ar name
+as the
+.Va cmdname
+instead of letting
+.Nm
+choose it automatically.
+.It Fl o , Fl -output-mask Ar mask
+Used to specify what output to redirect from
+.Va cmd
+to
+.Va log :
+.Dv stdout Pq 1 ,
+.Dv stderr Pq 2 ,
+or
+.Dv both Pq 3 .
+Default is 3.
+.It Fl p , Fl -pids Ar name
+Print the PIDs of the
+.Va fsv ,
+.Va cmd ,
+and
+.Va log
+processes for the indicated
+.Va cmdname .
+.It Fl R , Fl -recent-secs-log Ar secs
+Set
+.Va recent_recs
+for
+.Va log .
+.It Fl r , Fl -recent-secs Ar secs
+Set
+.Va recent_secs
+for
+.Va cmd .
+.It Fl s , Fl -status Ar name
+Status.
+.It Fl t , Fl -timeout Ar secs
+Set
+.Va timeout
+for
+.Va cmd .
+.It Fl V , Fl -version
+Print version and exit.
+.It Fl v , Fl -loglevel Ar level
+.Nm
+can log to
+.Dv stderr ,
+.Xr syslog 3 ,
+or both.
+It will log messages up to and including the severity level
+.Ar level
+to the outputs it has been configured to log to.
+See
+.Xr syslog 3
+for valid levels of
+.Ar level ;
+They are expected to be given with the
+.Ql LOG_
+prefix stripped and in lowercase.
+For example,
+.Ql crit ,
+.Ql notice ,
+.Ql debug .
+.It Fl X , Fl -no-stderr
+Do not log to
+.Dv stderr .
+.It Fl x , Fl -stderr
+Log to
+.Dv stderr .
+.It Fl Y , Fl -no-syslog
+Do not log to
+.Xr syslog 3 .
+.It Fl y , Fl -syslog
+Log to
+.Xr syslog 3 .
+.El
+.\"
+.\"
+.Sh FILES
+.Nm
+keeps its state information in a file tree rooted at
+.Dv FSV_CMDDIR_PREFIX ,
+by default
+.Pa /tmp .
+This is configurable as a compile-time preprocessor constant
+and should be a
+.Dq sticky
+directory
+.Po
+If you don't know what this means, see
+.Xr chmod 1
+.Pc .
+.Pp
+Under
+.Dv FSV_CMDDIR_PREFIX
+is a unique
+.Va fsvdir
+for each user.
+Their names are of the format
+.Pa fsv-UID ,
+where
+.Ql UID
+is an integer as returned by
+.Xr geteuid 2 .
+.Pp
+Within each
+.Va fsvdir
+lie the
+.Va cmddir
+directories which are named after the
+.Va cmdname
+of each process.
+Typically, the
+.Va cmdname
+is figured out automatically by
+.Nm
+from the executable name,
+but you can override it with
+.Fl n .
+For example, you may want to use a
+.Va cmdname
+of
+.Ql dbus
+for
+.Ql dbus-daemon .
+.\"
+.\"
+.Sh EXIT STATUS
+.Nm
+exits non-zero on error.
+This is typically 64
+.Pq In sysexits.h EX_USAGE
+for usage error, and 1 otherwise.
+Exiting due to
+.Va timeout
+being zero is considered successful.
+.Nm
+tries to do everything that could generate an error before
+it starts
+.Va cmd
+and
+.Va log ,
+and before calling
+.Xr daemon 3
+if
+.Fl b
+was specified.
+In this case, it prints the error directly to
+.Dv stderr
+and exits non-zero.
+.\"
+.\"
+.Sh EXAMPLES
+Run
+.Xr ls 1
+as the
+.Va cmd
+with debugging output.
+.Dl $ fsv -d ls -al
+.Pp
+Add
+.Xr tee 1
+as the logging process.
+.Dl $ fsv -d -l 'tee -a /dev/tty' ls -al
+.Pp
+Get the status.
+.Va gaveup
+should be true since the
+.Xr ls 1
+seems to be a very unstable daemon that is crashing immediately every time.
+.Dl $ fsv -s ls
+.\"
+.\"
+.Sh CAVEATS
+.Nm
+will
+.Xr chdir 2
+to a specific directory before executing
+.Va cmd
+and
+.Va log ,
+so using relative paths to a program
+.Pq Pa ./foo , Pa foo/bar
+will not work as expected.
+Use an absolute path
+.Pq Pa /usr/local/bin/foo
+instead.
+.\"
+.\"
+.Sh BUGS
+.Va recent_execs
+will always display as at least 1 in the
+.Fl s , Fl -status
+output.
+This is because
+.Nm
+only wakes up to recalculate and update this value when the process restarts;
+thus, it will never be zero.
+This may be fixed in a future version of
+.Nm .
