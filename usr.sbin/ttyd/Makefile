@@ -1,22 +1,13 @@
-# Makefile
-
 PROG = ttyd
 
-SLOG = ../slog
+NOMAN =
 
-CFLAGS = -Wall -I$(SLOG)
+SLOG = ../../lib/slog
+
 CPPFLAGS = -DSUPPORT_UTMP
-LDLIBS = -lslog -lrt -lpthread -lutil
-LDFLAGS = -static -L$(SLOG)
+COPTS = -I$(SLOG)
 
+LDADD += -lslog -lrt -lpthread -lutil
+LDFLAGS += -L$(SLOG)
 
-.PHONY: all clean
-
-$(PROG): $(PROG).c
-	$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) -o $@ $(PROG).c $(LDLIBS)
-
-all: $(PROG)
-
-clean:
-	@rm -f $(PROG) *.o
-	@echo cleaned
+.include <bsd.prog.mk>

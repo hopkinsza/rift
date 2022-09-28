@@ -1,22 +1,9 @@
-#
-# SPDX-License-Identifier: 0BSD
-#
-
-REBOOT_STYLE = linux
+HPR_REBOOT_STYLE = linux
 
 PROG = hpr
-SRCS = hpr.c reboot.$(REBOOT_STYLE).c
+SRCS = hpr.c reboot.$(HPR_REBOOT_STYLE).c
+INCS = osind_reboot.h
 
-CFLAGS = -Wall -static
+NOMAN =
 
-
-.PHONY: clean
-
-$(PROG): $(SRCS)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(SRCS) -o $@
-
-all: $(PROG)
-
-clean:
-	@rm -f $(PROG)
-	@echo cleaned
+.include <bsd.prog.mk>

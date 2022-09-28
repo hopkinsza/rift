@@ -1,27 +1,11 @@
-#
-# SPDX-License-Identifier: 0BSD
-#
-
 PROG = init
-SRCS = debug.c init.c
-OBJS = $(SRCS:.c=.o)
+SRCS = init.c debug.c
+INCS = debug.h
 
-CFLAGS = -Wall -static
-CPPFLAGS =
-# Uncomment for debugging output:
+NOMAN =
+
 #CPPFLAGS += -DDEBUG
-LDLIBS = -lrt -lpthread
 
+LDADD += -lrt -lpthread
 
-$(PROG): $(OBJS)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(LDLIBS)
-
-all: $(PROG)
-
-$(OBJS): debug.h
-
-clean:
-	@rm -f $(PROG) *.o
-	@echo cleaned
-
-.PHONY: all clean
+.include <bsd.prog.mk>

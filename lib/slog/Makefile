@@ -1,20 +1,10 @@
-LIBNAME = libslog.a
+LIB = slog
 SRCS = slog.c
-OBJS = $(SRCS:.c=.o)
+INCS = slog.h
 
-CFLAGS = -Wall
-ARFLAGS = rvs
+NOMAN =
 
+NOPROFILE =
+NOPIC =
 
-.PHONY: all clean
-
-$(LIBNAME): $(OBJS)
-	$(AR) $(ARFLAGS) $@ $(OBJS)
-
-all: $(LIBNAME)
-
-$(OBJS): slog.h
-
-clean:
-	@rm -f $(LIBNAME) *.o
-	@echo cleaned
+.include <bsd.lib.mk>
