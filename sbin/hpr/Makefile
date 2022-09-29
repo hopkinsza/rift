@@ -1,15 +1,11 @@
 TARGET_OS ?= $(.MAKE.OS)
 
-.if $(TARGET_OS) == Linux
-HPR_REBOOT_STYLE = linux
-.elif $(TARGET_OS) == NetBSD
-HPR_REBOOT_STYLE = netbsd
-.else
+.if $(TARGET_OS) != Linux && $(TARGET_OS) != NetBSD
 .error unsupported platform
 .endif
 
 PROG = hpr
-SRCS = hpr.c reboot.$(HPR_REBOOT_STYLE).c
+SRCS = hpr.c reboot.$(TARGET_OS).c
 INCS = osind_reboot.h
 
 NOMAN =
