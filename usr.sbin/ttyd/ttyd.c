@@ -12,13 +12,6 @@
 #include <time.h>
 #include <unistd.h>
 
-#ifdef SUPPORT_UTMP
-#include <utmp.h>
-#endif
-#ifdef SUPPORT_UTMPX
-#include <utmpx.h>
-#endif
-
 #include <slog.h>
 
 #define TTYD_TIMEOUT 30
@@ -55,7 +48,6 @@ struct ttyd_child {
 
 void ensure_timer();
 void load_config(const char *, struct ttyd_child *);
-void record_logout(char *, int);
 void usage();
 
 // signal block mask
@@ -429,30 +421,6 @@ cleanup:
 	}
 
 	fclose(fconf);
-}
-
-/*
- * utmp/utmpx is gross and non-portable.
- * logout(3) is available on netbsd, openbsd, and glibc;
- * logoutx(3) is available on netbsd.
- *
- * freebsd has neither and has some different kind of setup,
- * so it is not (currently) supported.
- *
- * This code is pretty much yoinked from netbsd init(8) circa 2022.
- */
-void
-record_logout(char *line, int status)
-{
-#ifdef SUPPORT_UTMP
-	logout(line);
-	logwtmp(line, "", "");
-#endif
-
-#ifdef SUPPORT_UTMPX
-	logoutx(line, status, DEAD_PROCESS);
-	logwtmpx(line, "", "", status, DEAD_PROCESS);
-#endif
 }
 
 void
