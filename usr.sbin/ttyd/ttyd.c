@@ -46,6 +46,7 @@ struct ttyd_child {
 	int quickies;
 };
 
+int fork_getty(struct ttyd_child *);
 void ensure_timer();
 void load_config(const char *, struct ttyd_child *);
 void usage();
@@ -243,6 +244,7 @@ main(int argc, char *argv[])
 			if (!found) {
 				// this is a new tty, fork the process
 				slog(LOG_DEBUG, "new tty: %s", new[n].tty);
+				fork_getty(&new[n]);
 			}
 		}
 
@@ -279,6 +281,7 @@ main(int argc, char *argv[])
 int
 fork_getty(struct ttyd_child *tc)
 {
+	slog(LOG_DEBUG, "attempting fork for %s", tc->tty);
 	pid_t pid;
 
 	pid = fork();
