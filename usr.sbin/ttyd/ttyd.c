@@ -199,7 +199,7 @@ main(int argc, char *argv[])
 	case SIGHUP:
 	{
 		slog(LOG_DEBUG, "> SIGHUP");
-		slog(LOG_INFO, "got SIGHUP, reloading config");
+		slog(LOG_NOTICE, "got SIGHUP, reloading config");
 
 		struct ttyd_child new[TTYD_CHILD_MAX];
 		memset(new, 0, sizeof(new));
@@ -272,7 +272,7 @@ main(int argc, char *argv[])
 	case SIGTERM:
 		// todo: exit cleanly
 		slog(LOG_DEBUG, "> SIGINT or SIGTERM");
-		slog(LOG_INFO, "got SIGINT or SIGTERM, exiting");
+		slog(LOG_NOTICE, "got SIGINT or SIGTERM, exiting");
 		exit(0);
 		break;
 	}
