@@ -290,7 +290,7 @@ fork_getty(struct ttyd_child *tc)
 
 		// generate a real, null-terminated argv to exec
 		char *argv[TTYD_GARGV_LEN+1];
-		argv[TTYD_GARGV_LEN+1] = NULL;
+		argv[TTYD_GARGV_LEN] = NULL;
 
 		for (int i=0; i<TTYD_GARGV_LEN; i++) {
 			argv[i] = tc->gargv[i];
