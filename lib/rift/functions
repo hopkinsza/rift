@@ -1,0 +1,112 @@
+#!/bin/ksh
+
+_rf_loaded=:
+
+#
+# Task output functions.
+# msg is for logging tasks.
+# msg2 is for logging sub-tasks.
+# If the message ends with ':', further output is expected.
+#
+# usage: msg message ...
+function msg {
+	if [[ $@ = *: ]]; then
+		print -- "$@"
+	else
+		print -- "$@..."
+	fi
+}
+# usage: msg2 message ...
+function msg2 {
+	local x=
+	if [[ $@ = *: ]]; then
+		# ${var%pattern} construct does not work for $@ in mksh; bug?
+		x="$@"
+		print -- "[${x%:}]:"
+	else
+		print -- "[$@]"
+	fi
+}
+
+#
+# Warning/error output functions.
+# These are defined using func() syntax so that $0 is not reset.
+#
+# usage: warn message ...
+warn() {
+	print -u2 -rn -- "$0: "
+	print -u2 -r -- "$@"
+}
+# usage: err [-e exitval] message ...
+err() {
+	local ret=1
+
+	case "$1" in
+	-e)
+		[[ -n $2 ]] && ret="$2"
+		shift 2
+		;;
+	-e*)
+		ret=${1##-e}
+		shift
+		;;
+	*)
+		;;
+	esac
+
+	warn "$@"
+	exit "$ret"
+}
+
+#
+# Print file(s) with '#'-style comments, leading and trailing whitespace,
+# and empty lines removed.
+#
+# Backslash-newline sequences are stripped and a backslash can escape itself.
+# All other backslashes are removed.
+#
+# usage: stripcom file ...
+function stripcom {
+	local l
+	local ret=0
+
+	for f; do
+		if [[ ! -r $f ]]; then
+			ret=1
+			continue
+		fi
+
+		while read l; do
+			l="${l%%#*}"
+			[[ -n $l ]] && print -r -- $l
+		done <"$f"
+	done
+
+	return $ret
+}
+
+#
+# Grab and test a variable with the name "$1".
+# If it is yes-like, return 0.
+# If it is no-like, return 1.
+# Otherwise, warn and return 2.
+#
+# usage: yesno var
+function yesno {
+	local v
+
+	eval v=\$$1
+
+	case $v in
+	yes|true|on|YES|TRUE|ON|1)
+		return 0
+		;;
+	no|false|off|NO|FALSE|OFF|0)
+		return 1
+		;;
+	*)
+		warn "\$$1 not set properly"
+		return 2
+		;;
+	esac
+}
