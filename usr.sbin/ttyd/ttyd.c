@@ -14,7 +14,11 @@
 
 #include <slog.h>
 
-#define TTYD_TIMEOUT 30
+#include "extern.h"
+
+#define GETTY_TIMEOUT 30
+#define GETTY_TOOFAST 5
+#define GETTY_QUICKIE_MAX 2
 
 #define TTYD_CHILD_MAX 64
 
@@ -183,6 +187,19 @@ main(int argc, char *argv[])
 
 	int sig;
 	while (sigwait(&bmask, &sig) == 0) switch (sig) {
+	case SIGALRM:
+		slog(LOG_DEBUG, "> SIGALRM");
+		// fork_getty for anyone in the list whose pid is 0
+		for (int i=0; i<TTYD_CHILD_MAX; i++) {
+			if (cur[i].tty[0] == '\0')
+				break;
+			if (cur[i].pid > 0)
+				continue;
+
+			cur[i].quickies = 0;
+			fork_getty(&cur[i]);
+		}
+		break;
 	case SIGCHLD:
 	{
 		slog(LOG_DEBUG, "> SIGCHLD");
@@ -191,7 +208,33 @@ main(int argc, char *argv[])
 		pid_t epid;
 
 		while ((epid = waitpid(-1, &status, WNOHANG)) > 0) {
-			// todo
+			// some getty process has exited
+			for (int i=0; i<TTYD_CHILD_MAX; i++) {
+				if (cur[i].tty[0] == '\0')
+					break;
+				if (epid != cur[i].pid)
+					continue;
+
+				cur[i].pid = 0;
+				do_logout(cur[i].tty, status);
+
+				// check quickies
+				struct timespec ts;
+				clock_gettime(CLOCK_MONOTONIC, &ts);
+				time_t now = ts.tv_sec;
+				if ((now - cur[i].started_at) <= GETTY_TOOFAST) {
+					cur[i].quickies++;
+					if (cur[i].quickies > GETTY_QUICKIE_MAX) {
+						// timeout
+						ensure_timer();
+						break;
+					}
+				} else {
+					cur[i].quickies = 0;
+				}
+
+				fork_getty(&cur[i]);
+			}
 		}
 
 		break;
@@ -270,9 +313,16 @@ main(int argc, char *argv[])
 	}
 	case SIGINT:
 	case SIGTERM:
-		// todo: exit cleanly
 		slog(LOG_DEBUG, "> SIGINT or SIGTERM");
 		slog(LOG_NOTICE, "got SIGINT or SIGTERM, exiting");
+
+		// TERM any children
+		for (int i=0; i<TTYD_CHILD_MAX; i++) {
+			if (cur[i].pid > 0) {
+				kill(SIGTERM, cur[i].pid);
+			}
+		}
+
 		exit(0);
 		break;
 	}
@@ -281,7 +331,7 @@ main(int argc, char *argv[])
 int
 fork_getty(struct ttyd_child *tc)
 {
-	slog(LOG_DEBUG, "attempting fork for %s", tc->tty);
+	slog(LOG_DEBUG, "forking for %s", tc->tty);
 	pid_t pid;
 
 	pid = fork();
@@ -299,12 +349,18 @@ fork_getty(struct ttyd_child *tc)
 			argv[i] = tc->gargv[i];
 		}
 
+		setsid();
 		execvp(argv[0], argv);
 
 		// if exec failure, exit 64
 		slog(LOG_ERR, "exec failed for %s: %m", tc->tty);
 		exit(64);
 	}
+
+	// always set the time, even if the fork failed
+	struct timespec ts;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	tc->started_at = ts.tv_sec;
 
 	if (pid == -1) {
 		tc->pid = 0;
@@ -327,7 +383,7 @@ ensure_timer()
 	timer_gettime(tid, &cur);
 
 	if (cur.it_value.tv_sec == 0 && cur.it_value.tv_nsec == 0) {
-		struct itimerspec new = { {0,0}, {TTYD_TIMEOUT,0}};
+		struct itimerspec new = { {0,0}, {GETTY_TIMEOUT,0}};
 		timer_settime(tid, 0, &new, NULL);
 	}
 }

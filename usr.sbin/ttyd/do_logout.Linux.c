@@ -8,7 +8,7 @@
 #endif
 
 void
-record_logout(char *line, int status)
+do_logout(char *line, int status)
 {
 #ifdef USE_UTMP
 	logout(line);
