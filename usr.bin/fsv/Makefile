@@ -2,8 +2,6 @@ PROG = fsv
 SRCS = fsv.c
 INCS = extern.h
 
-NOMAN =
-
 SLOG = ../../lib/slog
 
 COPTS = -I$(SLOG)
