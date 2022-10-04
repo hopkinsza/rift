@@ -90,7 +90,7 @@ main(int argc, char *argv[])
 		action = 'p';
 
 	int ch;
-	while ((ch = getopt(argc, argv, "hnpqrS")) != -1) {
+	while ((ch = getopt(argc, argv, "hlnpqrS")) != -1) {
 		switch(ch) {
 		case 'h':
 			action = 'h';
