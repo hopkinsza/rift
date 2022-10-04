@@ -231,7 +231,7 @@ usage()
 {
 	fprintf(stderr, "usage: <halt|poweroff|reboot> [-hlnpqrS]\n");
 	fprintf(stderr, "    -h  halt\n");
-	fprintf(stderr, "    -l  do not log to syslog(3)\n")
+	fprintf(stderr, "    -l  do not log to syslog(3)\n");
 	fprintf(stderr, "    -n  do not sync(2)\n");
 	fprintf(stderr, "    -p  poweroff\n");
 	fprintf(stderr, "    -q  do not give processes a chance to shut down "
