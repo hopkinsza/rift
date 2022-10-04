@@ -2,17 +2,38 @@
  * SPDX-License-Identifier: 0BSD
  */
 
+#include <sys/param.h>
 #include <sys/wait.h>
 
 #include <err.h>
 #include <getopt.h>
 #include <libgen.h>
+#include <pwd.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <syslog.h>
 #include <time.h>
 #include <unistd.h>
+
+/*
+ * Use 4.4BSD-like logwtmp(3) from <util.h>.
+ *
+ * Linux (glibc) has this in <utmp.h>.
+ */
+
+#ifdef BSD
+#if defined(USE_UTMP) || defined(USE_UTMPX)
+#include <util.h>
+#endif
+#endif
+
+#ifdef __linux__
+#ifdef USE_UTMP
+#include <utmp.h>
+#endif
+#endif
 
 #include "osind_reboot.h"
 
@@ -28,17 +49,31 @@ int
 main(int argc, char *argv[])
 {
 	char *progname;
-	int ch;
+	char *user;
 
 	// ascii h, p, or r
 	int action;
 
 	int do_clean = 1;
+	int do_log = 1;
 	int do_rcshutdown = 1;
 	int do_sync  = 1;
 
 	if (geteuid() != 0)
 		errx(1, "must run as root");
+
+	// try to grab a username for later logging
+	user = getlogin();
+	if (user == NULL) {
+		struct passwd *p;
+		p = getpwuid(getuid());
+
+		if (p == NULL) {
+			user = "???";
+		} else {
+			user = p->pw_name;
+		}
+	}
 
 	progname = malloc(strlen(argv[0]) + 2);
 	if (progname == NULL)
@@ -54,10 +89,14 @@ main(int argc, char *argv[])
 	else
 		action = 'p';
 
+	int ch;
 	while ((ch = getopt(argc, argv, "hnpqrS")) != -1) {
 		switch(ch) {
 		case 'h':
 			action = 'h';
+			break;
+		case 'l':
+			do_log = 0;
 			break;
 		case 'n':
 			do_sync = 0;
@@ -99,6 +138,34 @@ main(int argc, char *argv[])
 			wait(NULL);
 		}
 	}
+
+	if (do_log) {
+		openlog(progname, LOG_CONS, LOG_AUTH);
+		switch (action) {
+		case 'h':
+			syslog(LOG_CRIT, "halted by %s", user);
+			break;
+		case 'p':
+			syslog(LOG_CRIT, "powered off by %s", user);
+			break;
+		case 'r':
+			syslog(LOG_CRIT, "rebooted by %s", user);
+			break;
+		}
+		closelog();
+	}
+
+	/*
+	 * Write wtmp/wtmpx record.
+	 */
+
+#ifdef USE_UTMP
+	logwtmp("~", "shutdown", "");
+#endif
+#ifdef USE_UTMPX
+	// NetBSD extension
+	logwtmpx("~", "shutdown", 0, INIT_PROCESS);
+#endif
 
 	// this is where the fun begins
 	block_all_sigs();
@@ -162,8 +229,9 @@ block_all_sigs()
 void
 usage()
 {
-	fprintf(stderr, "usage: <halt|poweroff|reboot> [-hnpqrS]\n");
+	fprintf(stderr, "usage: <halt|poweroff|reboot> [-hlnpqrS]\n");
 	fprintf(stderr, "    -h  halt\n");
+	fprintf(stderr, "    -l  do not log to syslog(3)\n")
 	fprintf(stderr, "    -n  do not sync(2)\n");
 	fprintf(stderr, "    -p  poweroff\n");
 	fprintf(stderr, "    -q  do not give processes a chance to shut down "
