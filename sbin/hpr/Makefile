@@ -8,6 +8,6 @@ PROG = hpr
 SRCS = hpr.c reboot.$(TARGET_OS).c
 INCS = osind_reboot.h
 
-NOMAN =
+MAN = hpr.8
 
 .include <bsd.prog.mk>
