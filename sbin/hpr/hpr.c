@@ -16,9 +16,13 @@
 
 #include "osind_reboot.h"
 
+#ifndef HPR_GRACE
+#define HPR_GRACE 5
+#endif
+
+int wait_for_upto(int);
 void block_all_sigs();
 void usage();
-int wait_for_upto(int);
 
 int
 main(int argc, char *argv[])
@@ -72,7 +76,6 @@ main(int argc, char *argv[])
 			break;
 		default:
 			usage();
-			exit(1);
 			break;
 		}
 	}
@@ -101,11 +104,12 @@ main(int argc, char *argv[])
 	block_all_sigs();
 
 	if (do_clean) {
-		warnx("waiting up to 4 seconds for processes to exit...");
+		warnx("waiting up to %d seconds for processes to exit...",
+		    HPR_GRACE);
 		kill(-1, SIGTERM);
 		kill(-1, SIGHUP);
 		kill(-1, SIGCONT);
-		wait_for_upto(4);
+		wait_for_upto(HPR_GRACE);
 	}
 
 	if (do_sync) {
@@ -128,6 +132,23 @@ main(int argc, char *argv[])
 	}
 }
 
+int
+wait_for_upto(int secs)
+{
+	struct timespec one_sec = { 1, 0 };
+
+	for (int i=0; i<secs; i++) {
+		nanosleep(&one_sec, NULL);
+
+		if (kill(-1, 0) == -1) {
+			// all processes have exited
+			return 0;
+		}
+	}
+
+	// processes remain
+	return -1;
+}
 
 void
 block_all_sigs()
@@ -149,22 +170,5 @@ usage()
 	    "cleanly\n");
 	fprintf(stderr, "    -r  reboot\n");
 	fprintf(stderr, "    -S  do not run /etc/rc.shutdown\n");
-}
-
-int
-wait_for_upto(int secs)
-{
-	struct timespec one_sec = { 1, 0 };
-
-	for (int i=0; i<secs; i++) {
-		nanosleep(&one_sec, NULL);
-
-		if (kill(-1, 0) == -1) {
-			// all processes have exited
-			return 0;
-		}
-	}
-
-	// processes remain
-	return -1;
+	exit(1);
 }
