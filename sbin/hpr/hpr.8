@@ -1,0 +1,101 @@
+.Dd
+.Dt HPR 8
+.Os
+.\"
+.\"
+.Sh NAME
+.Nm hpr ,
+.Nm halt ,
+.Nm reboot ,
+.Nm poweroff
+.Nd stopping, restarting, and powering down the system
+.\"
+.\"
+.Sh SYNOPSIS
+.Nm
+.Op Fl hlnpqrS
+.\"
+.\"
+.Sh DESCRIPTION
+The
+.Nm halt ,
+.Nm poweroff ,
+and
+.Nm reboot
+utilities
+respectively halt, power down, or restart the system.
+Before running the
+.Xr reboot 2
+system call,
+they first attempt to execute the file
+.Pa /etc/rc.shutdown ,
+flush the file system cache to disk, and
+send all running processes a SIGTERM.
+The action is logged by sending a message via
+.Xr syslog 3
+and by entering a shutdown record into the login accounting file \(em see
+.Xr utmp 5
+and
+.Xr utmpx 5 .
+.Pp
+The options are as follows:
+.Bl -tag -width Ds
+.It Fl h
+Halt the system.
+This is the default if called as
+.Nm halt .
+.It Fl l
+Suppress sending a message via
+.Xr syslog 3 .
+.It Fl n
+Do not flush the file system cache.
+This option should probably not be used unless
+a disk or processor is on fire.
+.It Fl p
+Power down the system.
+This is the default if called as
+.Nm poweroff
+or anything other than
+.Nm halt
+or
+.Nm reboot .
+.It Fl q
+Do not give processes a chance to shut down cleanly.
+This option should probably not be used.
+.It Fl r
+Reboot the system.
+This is the default if called as
+.Nm reboot .
+.It Fl S
+Do not run
+.Pa /etc/rc.shutdown .
+.El
+.Pp
+Normally, the
+.Xr shutdown 8
+utility is used to give users advance warning of their impending doom.
+.Sh IMPLEMENTATION NOTES
+.Nm
+is a multi-call binary.
+That means it will behave differently depending on the name it's called as.
+In a typical
+.Nm
+installation,
+.Nm halt ,
+.Nm poweroff ,
+and
+.Nm reboot
+are symbolic links to the
+.Nm
+binary.
+.Sh SEE ALSO
+.Xr reboot 2
+.Xr sync 2
+.Xr utmp 5
+.Xr utmpx 5
+.Xr shutdown 8
+.Sh HISTORY
+A
+.Nm reboot
+command appeared in
+.Bx 4.0 .
