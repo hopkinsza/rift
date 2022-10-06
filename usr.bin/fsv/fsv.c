@@ -764,25 +764,6 @@ str_to_l(const char *str)
 	return val;
 }
 
-//pid_t
-//fork_log(struct fsv_child *log, int logpipe[], char *argv[])
-//{
-//	log->total_execs++;
-//	gettimeofday(&log->tv, NULL);
-//	//TODO
-//}
-
-// int
-// fork_rc()
-// {
-// 	int pid;
-// 	if ((pid = fork()) == 0) {
-// 		sigprocmask(SIG_UNBLOCK, &bmask, NULL);
-// 		execl("/bin/rc", "rc", NULL);
-// 	}
-// 	return pid;
-// }
-
 void
 termprocs(struct fsv_child chld[])
 {
