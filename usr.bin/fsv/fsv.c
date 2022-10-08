@@ -625,6 +625,7 @@ main(int argc, char *argv[])
 				    "max_recent_execs exceeded for %s, timeout for %ld secs",
 				    cname, fsv.timeout);
 				timer_settime(cmd_tid, 0, &cmd_tmout_itspec, NULL);
+				write_info(fd_info, &fsv, chld);
 				break;
 			}
 		}
@@ -640,6 +641,7 @@ main(int argc, char *argv[])
 			if (r == -1)
 				timer_settime(log_tid, 0, &log_itspec, NULL);
 		}
+		write_info(fd_info, &fsv, chld);
 		break;
 	}
 	case SIGINT:
