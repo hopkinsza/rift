@@ -1,2 +1,2 @@
-BINDIR ?= /usr/bin
+BINDIR ?= /bin
 .include "../Makefile.inc"
