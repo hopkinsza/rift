@@ -22,7 +22,7 @@
 .Op Fl v Ar level
 .Ar cmd
 .Nm
-.Aq Fl p | Fl s
+.Aq Fl p | Fl S | Fl s
 .Ar name
 .Nm
 .Aq Fl h | Fl V
@@ -131,15 +131,16 @@ calls will start blocking or failing when the
 process tries to log.
 .Pp
 You can view the status information with
-.Fl s
+.Fl p ,
+.Fl S ,
 or
-.Fl p .
+.Fl s .
 When these flags are used,
 .Nm
 will exit 0 if an
 .Nm
 instance is running that
-.Ar cmdname ,
+.Ar name ,
 and 1 otherwise.
 .\"
 .\" options
@@ -196,8 +197,6 @@ process.
 .It Fl n , Fl -name Ar name
 Use
 .Ar name
-as the
-.Va cmdname
 instead of letting
 .Nm
 choose it automatically.
@@ -218,7 +217,7 @@ Print the PIDs of the
 and
 .Va log
 processes for the indicated
-.Va cmdname .
+.Ar name .
 .It Fl R , Fl -recent-secs-log Ar secs
 Set
 .Va recent_recs
@@ -229,8 +228,14 @@ Set
 .Va recent_secs
 for
 .Va cmd .
+.It Fl S , Fl -status-exit Ar name
+Exit 0 if that
+.Ar name
+is running,
+1 if not.
 .It Fl s , Fl -status Ar name
-Status.
+Print status information for
+.Ar name .
 .It Fl t , Fl -timeout Ar secs
 Set
 .Va timeout

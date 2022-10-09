@@ -98,7 +98,7 @@ main(int argc, char *argv[])
 	// -1 means we are not logging at all
 	long out_mask = -1;
 
-	const char *getopt_str = "+Bbdhl:M:m:n:o:p:R:r:s:t:Vv:XxYy";
+	const char *getopt_str = "+Bbdhl:M:m:n:o:p:R:r:S:s:t:Vv:XxYy";
 
 	struct option longopts[] = {
 		{ "background",		no_argument,		NULL,	'b' },
@@ -113,6 +113,7 @@ main(int argc, char *argv[])
 		{ "pids",		required_argument,	NULL,	'p' },
 		{ "recent-secs-log",	required_argument,	NULL,	'R' },
 		{ "recent-secs",	required_argument,	NULL,	'r' },
+		{ "status-exit",	required_argument,	NULL,	'S' },
 		{ "status",		required_argument,	NULL,	's' },
 		{ "timeout",		required_argument,	NULL,	't' },
 		{ "version",		no_argument,		NULL,	'V' },
@@ -233,6 +234,10 @@ main(int argc, char *argv[])
 		case 'r':
 			chld[0].recent_secs = str_to_l(optarg);
 			break;
+		case 'S':
+			cmdname = optarg;
+			do_status = 'S';
+			break;
 		case 's':
 			cmdname = optarg;
 			do_status = 's';
@@ -295,6 +300,7 @@ main(int argc, char *argv[])
 		int fd_info;
 		struct allinfo ai;
 
+		// cd to the directory
 		if (chdir(FSV_CMDDIR_PREFIX) == -1)
 			err(1, "chdir(%s) failed", FSV_CMDDIR_PREFIX);
 		if (chdir(fsvdir) == -1)
@@ -302,10 +308,20 @@ main(int argc, char *argv[])
 		if (chdir(cmdname) == -1)
 			err(1, "chdir(%s) failed", cmdname);
 
+		// open info.struct
 		fd_info = open("info.struct", O_RDONLY);
 		if (fd_info == -1)
 			err(1, "open(info.struct) failed");
 
+		// if -S, just see if we can place a flock(2)
+		if (do_status == 'S') {
+			if (flock(fd_info, LOCK_EX|LOCK_NB) == -1)
+				exit(0);
+			else
+				exit(1);
+		}
+
+		// otherwise, read
 		ssize_t r;
 		r = read(fd_info, &ai, sizeof(ai));
 		if (r == -1)
