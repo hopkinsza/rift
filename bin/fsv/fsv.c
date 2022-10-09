@@ -101,27 +101,27 @@ main(int argc, char *argv[])
 	const char *getopt_str = "+Bbdhl:M:m:n:o:p:R:r:s:t:Vv:XxYy";
 
 	struct option longopts[] = {
-		{ "background",	no_argument,		NULL,	'b' },
-		{ "daemon",	no_argument,		NULL,	'b' },
-		{ "debug",	no_argument,		NULL,	'd' },
-		{ "help",	no_argument,		NULL,	'h' },
-		{ "log",	required_argument,	NULL,	'l' },
-		{ "max-execs-log",required_argument,	NULL,	'M' },
-		{ "max-execs",	required_argument,	NULL,	'm' },
-		{ "name",	required_argument,	NULL,	'n' },
-		{ "output-mask",required_argument,	NULL,	'o' },
-		{ "pids",	required_argument,	NULL,	'p' },
-		{ "recent-secs-log",required_argument,	NULL,	'R' },
-		{ "recent-secs",required_argument,	NULL,	'r' },
-		{ "status",	required_argument,	NULL,	's' },
-		{ "timeout",	required_argument,	NULL,	't' },
-		{ "version",	no_argument,		NULL,	'V' },
-		{ "loglevel",	required_argument,	NULL,	'v' },
-		{ "no-stderr",	no_argument,		NULL,	'X' },
-		{ "stderr",	no_argument,		NULL,	'x' },
-		{ "no-syslog",	no_argument,		NULL,	'Y' },
-		{ "syslog",	no_argument,		NULL,	'y' },
-		{ NULL,		0,			NULL,	0 }
+		{ "background",		no_argument,		NULL,	'b' },
+		{ "daemon",		no_argument,		NULL,	'b' },
+		{ "debug",		no_argument,		NULL,	'd' },
+		{ "help",		no_argument,		NULL,	'h' },
+		{ "log",		required_argument,	NULL,	'l' },
+		{ "max-execs-log",	required_argument,	NULL,	'M' },
+		{ "max-execs",		required_argument,	NULL,	'm' },
+		{ "name",		required_argument,	NULL,	'n' },
+		{ "output-mask",	required_argument,	NULL,	'o' },
+		{ "pids",		required_argument,	NULL,	'p' },
+		{ "recent-secs-log",	required_argument,	NULL,	'R' },
+		{ "recent-secs",	required_argument,	NULL,	'r' },
+		{ "status",		required_argument,	NULL,	's' },
+		{ "timeout",		required_argument,	NULL,	't' },
+		{ "version",		no_argument,		NULL,	'V' },
+		{ "loglevel",		required_argument,	NULL,	'v' },
+		{ "no-stderr",		no_argument,		NULL,	'X' },
+		{ "stderr",		no_argument,		NULL,	'x' },
+		{ "no-syslog",		no_argument,		NULL,	'Y' },
+		{ "syslog",		no_argument,		NULL,	'y' },
+		{ NULL,			0,			NULL,	0 }
 	};
 
 	int ch;
