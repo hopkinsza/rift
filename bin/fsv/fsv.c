@@ -49,7 +49,7 @@ main(int argc, char *argv[])
 	sigaddset(&bmask, SIGHUP);
 	sigaddset(&bmask, SIGTERM);
 
-	slog_open();
+	slog_open(NULL, LOG_PID|LOG_PERROR|LOG_NLOG, LOG_DAEMON);
 	slog_upto(LOG_INFO);
 
 	/*
@@ -98,13 +98,14 @@ main(int argc, char *argv[])
 	// -1 means we are not logging at all
 	long out_mask = -1;
 
-	const char *getopt_str = "+Bbdhl:M:m:n:o:p:R:r:S:s:t:Vv:XxYy";
+	const char *getopt_str = "+BbdhL:l:M:m:n:o:p:R:r:S:s:t:VYy";
 
 	struct option longopts[] = {
 		{ "background",		no_argument,		NULL,	'b' },
 		{ "daemon",		no_argument,		NULL,	'b' },
 		{ "debug",		no_argument,		NULL,	'd' },
 		{ "help",		no_argument,		NULL,	'h' },
+		{ "loglevel",		required_argument,	NULL,	'L' },
 		{ "log",		required_argument,	NULL,	'l' },
 		{ "max-execs-log",	required_argument,	NULL,	'M' },
 		{ "max-execs",		required_argument,	NULL,	'm' },
@@ -117,10 +118,7 @@ main(int argc, char *argv[])
 		{ "status",		required_argument,	NULL,	's' },
 		{ "timeout",		required_argument,	NULL,	't' },
 		{ "version",		no_argument,		NULL,	'V' },
-		{ "loglevel",		required_argument,	NULL,	'v' },
-		{ "no-stderr",		no_argument,		NULL,	'X' },
-		{ "stderr",		no_argument,		NULL,	'x' },
-		{ "no-syslog",		no_argument,		NULL,	'Y' },
+		{ "syslog-only",	no_argument,		NULL,	'Y' },
 		{ "syslog",		no_argument,		NULL,	'y' },
 		{ NULL,			0,			NULL,	0 }
 	};
@@ -135,8 +133,7 @@ main(int argc, char *argv[])
 			break;
 		case 'b':
 			do_daemon = 1;
-			slog_do_stderr(0);
-			slog_do_syslog(1);
+			slog_open(NULL, LOG_PID, LOG_DAEMON);
 			break;
 		case 'd':
 			slog_upto(LOG_DEBUG);
@@ -145,6 +142,26 @@ main(int argc, char *argv[])
 		case 'h':
 			usage();
 			exit(0);
+			break;
+		case 'L':
+			if (strcmp(optarg, "emerg") == 0)
+				slog_upto(LOG_EMERG);
+			else if (strcmp(optarg, "alert") == 0)
+				slog_upto(LOG_ALERT);
+			else if (strcmp(optarg, "crit") == 0)
+				slog_upto(LOG_CRIT);
+			else if (strcmp(optarg, "err") == 0)
+				slog_upto(LOG_ERR);
+			else if (strcmp(optarg, "warning") == 0)
+				slog_upto(LOG_WARNING);
+			else if (strcmp(optarg, "notice") == 0)
+				slog_upto(LOG_NOTICE);
+			else if (strcmp(optarg, "info") == 0)
+				slog_upto(LOG_INFO);
+			else if (strcmp(optarg, "debug") == 0)
+				slog_upto(LOG_DEBUG);
+			else
+				errx(64, "unrecognized loglevel for -v");
 			break;
 		case 'l':
 			if (out_mask == -1)
@@ -249,37 +266,11 @@ main(int argc, char *argv[])
 			printf("fsv %s\n", FSV_VERSION);
 			exit(0);
 			break;
-		case 'v':
-			if (strcmp(optarg, "emerg") == 0)
-				slog_upto(LOG_EMERG);
-			else if (strcmp(optarg, "alert") == 0)
-				slog_upto(LOG_ALERT);
-			else if (strcmp(optarg, "crit") == 0)
-				slog_upto(LOG_CRIT);
-			else if (strcmp(optarg, "err") == 0)
-				slog_upto(LOG_ERR);
-			else if (strcmp(optarg, "warning") == 0)
-				slog_upto(LOG_WARNING);
-			else if (strcmp(optarg, "notice") == 0)
-				slog_upto(LOG_NOTICE);
-			else if (strcmp(optarg, "info") == 0)
-				slog_upto(LOG_INFO);
-			else if (strcmp(optarg, "debug") == 0)
-				slog_upto(LOG_DEBUG);
-			else
-				errx(64, "unrecognized loglevel for -v");
-			break;
-		case 'X':
-			slog_do_stderr(0);
-			break;
-		case 'x':
-			slog_do_stderr(1);
-			break;
 		case 'Y':
-			slog_do_syslog(0);
+			slog_open(NULL, LOG_PID, LOG_DAEMON);
 			break;
 		case 'y':
-			slog_do_syslog(1);
+			slog_open(NULL, LOG_PID|LOG_PERROR, LOG_DAEMON);
 			break;
 		case '?':
 		default:

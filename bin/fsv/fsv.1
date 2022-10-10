@@ -10,7 +10,8 @@
 .\"
 .Sh SYNOPSIS
 .Nm
-.Op Fl bdXxYy
+.Op Fl bdYy
+.Op Fl L Ar level
 .Op Fl l Ar log
 .Op Fl M Ar max
 .Op Fl m Ar max
@@ -19,7 +20,6 @@
 .Op Fl R Ar secs
 .Op Fl r Ar secs
 .Op Fl t Ar secs
-.Op Fl v Ar level
 .Ar cmd
 .Nm
 .Aq Fl p | Fl S | Fl s
@@ -167,8 +167,7 @@ and
 .Dv stderr
 are set to
 .Pa /dev/null .
-Logging is set to go to syslog only,
-but you could disable this with a later
+This implies
 .Fl Y .
 .It Fl d , Fl -debug
 Log messages up to and including
@@ -177,6 +176,11 @@ Equivalent to
 .Fl v Ar debug .
 .It Fl h , Fl -help
 Print a brief help message.
+.It Fl L , Fl -loglevel Ar level
+Log up to the specified
+.Ar level ;
+see
+.Xr syslog 3 .
 .It Fl l , Fl -log Ar log
 Program to pipe the output of
 .Va cmd
@@ -243,38 +247,14 @@ for
 .Va cmd .
 .It Fl V , Fl -version
 Print version and exit.
-.It Fl v , Fl -loglevel Ar level
-.Nm
-can log to
-.Dv stderr ,
-.Xr syslog 3 ,
-or both.
-It will log messages up to and including the severity level
-.Ar level
-to the outputs it has been configured to log to.
-See
-.Xr syslog 3
-for valid levels of
-.Ar level ;
-They are expected to be given with the
-.Ql LOG_
-prefix stripped and in lowercase.
-For example,
-.Ql crit ,
-.Ql notice ,
-.Ql debug .
-.It Fl X , Fl -no-stderr
-Do not log to
-.Dv stderr .
-.It Fl x , Fl -stderr
-Log to
-.Dv stderr .
-.It Fl Y , Fl -no-syslog
-Do not log to
+.It Fl Y , Fl -syslog-only
+Log only to
 .Xr syslog 3 .
 .It Fl y , Fl -syslog
 Log to
-.Xr syslog 3 .
+.Xr syslog 3
+syslog as well as
+.Dv stderr .
 .El
 .\"
 .\"
