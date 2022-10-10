@@ -90,7 +90,7 @@ main(int argc, char *argv[])
 	memset(cur, 0, sizeof(cur));
 
 	// set up logging
-	slog_open();
+	slog_open(NULL, LOG_PID|LOG_PERROR|LOG_NLOG, LOG_AUTH);
 	slog_upto(LOG_INFO);
 
 	/*
@@ -100,7 +100,7 @@ main(int argc, char *argv[])
 	char *conf = "/etc/ttyd.conf";
 	int do_daemon = 0;
 
-	const char *getopt_str = "Bbc:dv:XxYy";
+	const char *getopt_str = "Bbc:dL:XxYy";
 	int ch;
 	while ((ch = getopt(argc, argv, getopt_str)) != -1) switch (ch) {
 	case 'B':
@@ -108,8 +108,7 @@ main(int argc, char *argv[])
 		break;
 	case 'b':
 		do_daemon = 1;
-		slog_do_stderr(0);
-		slog_do_syslog(1);
+		slog_open(NULL, LOG_PID, LOG_AUTH);
 		break;
 	case 'c':
 		conf = optarg;
@@ -117,7 +116,7 @@ main(int argc, char *argv[])
 	case 'd':
 		slog_upto(LOG_DEBUG);
 		break;
-	case 'v':
+	case 'L':
 		if (strcmp(optarg, "emerg") == 0)
 			slog_upto(LOG_EMERG);
 		else if (strcmp(optarg, "alert") == 0)
@@ -137,17 +136,11 @@ main(int argc, char *argv[])
 		else
 			errx(64, "unrecognized loglevel for -v");
 		break;
-	case 'X':
-		slog_do_stderr(0);
-		break;
-	case 'x':
-		slog_do_stderr(1);
-		break;
 	case 'Y':
-		slog_do_syslog(0);
+		slog_open(NULL, LOG_PID, LOG_AUTH);
 		break;
 	case 'y':
-		slog_do_syslog(1);
+		slog_open(NULL, LOG_PID|LOG_PERROR, LOG_AUTH);
 		break;
 	default:
 		usage();
