@@ -4,6 +4,19 @@
 #include <syslog.h>
 
 /*
+ * DO NOT USE LOG_ODELAY with slog! It is aliased to LOG_NLOG if your libc
+ * doesn't already have that defined.
+ *
+ * Since LOG_ODELAY is already the default, it is typically never used.
+ * Utilizing this already-defined and standardized flag value means we never
+ * have to worry about a collision, which would be possible if a random high
+ * value was chosen.
+ */
+#ifndef LOG_NLOG
+#define LOG_NLOG LOG_ODELAY
+#endif
+
+/*
  * Assume that LOG_* level constants are defined as they originally were
  * in 4.2BSD, to be able to compare them.
  * This is true for modern BSDs, glibc, and musl.
@@ -21,17 +34,11 @@
 your libc does not define syslog.h LOG_* levels as expected
 #endif
 
-#ifndef SLOG_FACILITY
-#define SLOG_FACILITY LOG_DAEMON
-#endif
-
 void slog(int, const char *, ...);
 
-void slog_open();
+void slog_open(const char *, int, int);
 void slog_close();
 
 int slog_upto(int);
-int slog_do_stderr(int);
-int slog_do_syslog(int);
 
 #endif // !_SLOG_H_

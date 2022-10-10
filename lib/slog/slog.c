@@ -6,22 +6,12 @@
 
 #include "slog.h"
 
-static int facil = SLOG_FACILITY;
-
 static int upto = LOG_DEBUG;
 
 static int do_stderr = 1;
 static int do_syslog = 0;
 
 /*
- * syslog(3) lookalike that also allows printing to stderr only.
- * This is the default.
- *
- * Currently, only netbsd syslog(3) can do this with its LOG_NLOG flag,
- * otherwise we would use it directly.
- * Hopefully, LOG_NLOG will eventually become universal and this wrapper will
- * no longer be necessary.
- *
  * When printing to stderr, a %m specifier is only recognized at the end.
  * Argument 'level' should be a level only, not OR'd with facility.
  */
@@ -86,9 +76,28 @@ slog(int level, const char *fmt, ...)
  * Wrappers around openlog() and closelog().
  */
 void
-slog_open()
+slog_open(const char *ident, int logopt, int facil)
 {
-	openlog(NULL, LOG_NDELAY|LOG_PID, facil);
+	do_syslog = 1;
+	do_stderr = 0;
+
+	/*
+	 * extract LOG_NLOG and LOG_PERROR from logopt
+	 */
+
+	int nl = LOG_NLOG & logopt;
+	if (nl != 0) {
+		do_syslog = 0;
+		logopt ^= LOG_NLOG;
+	}
+
+	int pe = LOG_PERROR & logopt;
+	if (pe != 0) {
+		do_stderr = 1;
+		logopt ^= LOG_PERROR;
+	}
+
+	openlog(ident, logopt, facil);
 }
 void
 slog_close()
@@ -102,23 +111,8 @@ slog_upto(int prio)
 	int prev = upto;
 	upto = prio;
 
+	// not necessary, but why not
 	setlogmask(LOG_UPTO(prio));
 
-	return prev;
-}
-
-int
-slog_do_stderr(int x)
-{
-	int prev = do_stderr;
-	do_stderr = x;
-	return prev;
-}
-
-int
-slog_do_syslog(int x)
-{
-	int prev = do_syslog;
-	do_syslog = x;
 	return prev;
 }

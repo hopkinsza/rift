@@ -1,7 +1,8 @@
 slog
 ====
 
-`syslog(3)` lookalike that also allows printing to stderr only.
+`slog` is a wrapper around `syslog(3)` that allows the non-standardized
+`LOG_NLOG` flag from NetBSD.
 
 why
 ---
