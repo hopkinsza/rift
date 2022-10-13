@@ -35,20 +35,20 @@ It is able to:
 .Bl -bullet -width 1n -offset Ds
 .It
 Run a command
-.Va cmd ,
+.Ar cmd ,
 restarting it if it exits for any reason.
 .It
-Optionally run another
-.Va log
+Optionally run an attached
+.Ar log
 process to reliably log messages,
 even if either process is restarted.
 .It
 Maintain state information for the
-.Va fsv
+.Nm
 process itself as well as
-.Va cmd
+.Ar cmd
 and
-.Va log .
+.Ar log .
 .El
 .\"
 .\"
@@ -62,27 +62,20 @@ business,
 but this can cause an infinite loop in the case of an enduring error.
 Repeated crashes could also indicate a malicious actor trying to attack the
 daemon, especially in the case of a network service.
-.Pp
-Thus,
-.Nm
-keeps track of how many times it has restarted each command recently
-and allows you to decide what it should do
-if it reaches too high of a value.
 .\"
 .\" recent_execs
 .\"
 .Pp
-This value is called
-.Va recent_execs ,
-and
+Thus,
 .Nm
-keeps track of it for both the
-.Va cmd
-and
-.Va log
-processes.
+tracks a value
 .Va recent_execs
-starts at 0 and will increment every time the process is executed, unless
+for both
+.Ar cmd
+and
+.Ar log .
+.Va recent_execs
+starts at 0 and is incremented every time the process is executed, unless
 .Va recent_secs
 or more seconds have passed.
 In this case, the event is considered the start of a new string of crashes and
@@ -95,10 +88,10 @@ to reset.
 .Pp
 The maximum number of allowed
 .Va recent_execs
-can be set with
+is controlled by
 .Va recent_execs_max .
 In the event that this number is about to be exceeded by
-.Va cmd ,
+.Ar cmd ,
 .Nm
 will take action according to
 .Va timeout .
@@ -123,12 +116,41 @@ is always zero for the
 process.
 This is because it is a very
 .Em bad
-thing if the log process starts crashing \(em
+thing if the log process goes offline \(em
 the pipe will fill up and
 .Xr write 2
 calls will start blocking or failing when the
-.Va cmd
+.Ar cmd
 process tries to log.
+.\"
+.\" what's in a name?
+.\"
+.Pp
+Every
+.Nm Ns -managed
+process has a
+.Ar name .
+This is used to keep state information in a well-known location under
+.Dv FSV_STATE_PREFIX ,
+by default
+.Pa /tmp ,
+so it can be accessed later.
+Typically, the
+.Ar name
+is chosen automatically from the
+.Ar cmd
+executable name,
+but you can override it with
+.Fl n .
+For example, you may want to use a
+.Ar name
+of
+.Ql dbus
+for
+.Ql dbus-daemon ,
+or
+.Ql getty@tty2
+for a particular getty instance.
 .Pp
 You can view the status information with
 .Fl p ,
@@ -287,24 +309,9 @@ is an integer as returned by
 .Pp
 Within each
 .Va fsvdir
-lie the
-.Va cmddir
-directories which are named after the
-.Va cmdname
+lie directories which are typically named after the
+.Ar cmd
 of each process.
-Typically, the
-.Va cmdname
-is figured out automatically by
-.Nm
-from the executable name,
-but you can override it with
-.Fl n .
-For example, you may want to use a
-.Va cmdname
-of
-.Ql dbus
-for
-.Ql dbus-daemon .
 .\"
 .\"
 .Sh EXIT STATUS
