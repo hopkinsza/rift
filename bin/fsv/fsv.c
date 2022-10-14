@@ -285,98 +285,11 @@ main(int argc, char *argv[])
 
 	/*
 	 * If we are just printing status, do so.
+	 * Note that this will exit(3).
 	 */
 
-	if (do_status != 0) {
-		int fd_info;
-		struct allinfo ai;
-
-		// cd to the directory
-		if (chdir(FSV_CMDDIR_PREFIX) == -1)
-			err(1, "chdir(%s) failed", FSV_CMDDIR_PREFIX);
-		if (chdir(fsvdir) == -1)
-			err(1, "chdir(%s) failed", fsvdir);
-		if (chdir(cmdname) == -1)
-			err(1, "chdir(%s) failed", cmdname);
-
-		// open info.struct
-		fd_info = open("info.struct", O_RDONLY);
-		if (fd_info == -1)
-			err(1, "open(info.struct) failed");
-
-		// if -S, just see if we can place a flock(2)
-		if (do_status == 'S') {
-			if (flock(fd_info, LOCK_EX|LOCK_NB) == -1)
-				exit(0);
-			else
-				exit(1);
-		}
-
-		// otherwise, read
-		ssize_t r;
-		r = read(fd_info, &ai, sizeof(ai));
-		if (r == -1)
-			err(1, "read from info.struct failed");
-		else if (r < sizeof(ai))
-			errx(1, "unexpected data in info.struct");
-
-		if (do_status == 'p') {
-			printf("%ld\n", (long)ai.fsv.pid);
-			printf("%ld\n", (long)ai.chld[0].pid);
-			printf("%ld\n", (long)ai.chld[1].pid);
-		} else if (do_status == 's') {
-			printf("fsv\n");
-
-			printf("pid: ");
-			if (ai.fsv.pid == 0)
-				printf("not running\n");
-			else
-				printf("%ld\n", (long)ai.fsv.pid);
-
-			char tstr[64];
-			struct tm *tm;
-
-			tm = localtime(&ai.fsv.since.tv_sec);
-			strftime(tstr, sizeof(tstr), "%F %T %z (%r %Z)", tm);
-			printf("since: %s\n", tstr);
-
-			tm = gmtime(&ai.fsv.since.tv_sec);
-			strftime(tstr, sizeof(tstr), "%F %T %z (%r %Z)", tm);
-			printf("since: %s\n", tstr);
-
-			printf("since (timespec): { %ld, %09ld }\n",
-			       (long)ai.fsv.since.tv_sec, ai.fsv.since.tv_nsec);
-			printf("gaveup: %d\n", ai.fsv.gaveup);
-
-			for (int i=0; i<2; i++) {
-				struct fsv_child *p = &ai.chld[i];
-
-				printf("\n");
-				if (i == 0)
-					printf("cmd\n");
-				else if (i == 1)
-					printf("log\n");
-
-				printf("pid: ");
-				if (p->pid == -1)
-					printf("never started\n");
-				else if (p->pid == 0)
-					printf("not running\n");
-				else
-					printf("%ld\n", (long)p->pid);
-
-				printf("total_execs: %ld\n", p->total_execs);
-				printf("recent_execs: %ld\n", p->recent_execs);
-				printf("max_recent_execs: %ld\n", p->max_recent_execs);
-				printf("recent_secs: %ld\n", p->recent_secs);
-			}
-		}
-
-		if (ai.fsv.pid > 0)
-			exit(0);
-		else
-			exit(1);
-	}
+	if (do_status != 0)
+		status(do_status, cmdname);
 
 	/*
 	 * Verify that we have a command to run.

@@ -50,4 +50,9 @@ extern int fd_devnull;
 // signal block mask
 extern sigset_t bmask;
 
+/*
+ * status.c
+ */
+void status(char, char *);
+
 #endif // !_EXTERN_H_
