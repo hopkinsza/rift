@@ -93,7 +93,7 @@ main(int argc, char *argv[])
 	int do_daemon = 0;
 	int do_status = 0;
 
-	char *cmdname = NULL;
+	char *name = NULL;
 
 	// -1 means we are not logging at all
 	long out_mask = -1;
@@ -233,7 +233,7 @@ main(int argc, char *argv[])
 			chld[0].max_recent_execs = str_to_l(optarg);
 			break;
 		case 'n':
-			cmdname = optarg;
+			name = optarg;
 			break;
 		case 'o':
 			// this is not settable to -1 with str_to_l
@@ -242,7 +242,7 @@ main(int argc, char *argv[])
 				errx(64, "-m arg must be in range 0-3");
 			break;
 		case 'p':
-			cmdname = optarg;
+			name = optarg;
 			do_status = 'p';
 			break;
 		case 'R':
@@ -252,11 +252,11 @@ main(int argc, char *argv[])
 			chld[0].recent_secs = str_to_l(optarg);
 			break;
 		case 'S':
-			cmdname = optarg;
+			name = optarg;
 			do_status = 'S';
 			break;
 		case 's':
-			cmdname = optarg;
+			name = optarg;
 			do_status = 's';
 			break;
 		case 't':
@@ -289,11 +289,11 @@ main(int argc, char *argv[])
 	 */
 
 	if (do_status != 0)
-		status(do_status, cmdname);
+		status(do_status, name);
 
 	/*
 	 * Verify that we have a command to run.
-	 * Find cmdname if not already set by -n.
+	 * Find name if not already set by -n.
 	 */
 
 	if (argc == 0) {
@@ -302,19 +302,19 @@ main(int argc, char *argv[])
 		exit(64);
 	}
 
-	if (cmdname == NULL) {
+	if (name == NULL) {
 		// basename(3) may modify its argument, so use a copy of argv[0]
 		char *tmp = malloc(strlen(argv[0]) + 1);
 		strcpy(tmp, argv[0]);
 
 		// have room for an extra character
 		// because basename("") can return "."
-		cmdname = malloc(strlen(tmp) + 2);
-		strcpy(cmdname, basename(tmp));
+		name = malloc(strlen(tmp) + 2);
+		strcpy(name, basename(tmp));
 	}
 
-	if (*cmdname == '.' || *cmdname == '/') {
-		errx(64, "cmdname does not make sense");
+	if (*name == '.' || *name == '/') {
+		errx(64, "name does not make sense");
 	}
 
 	/*
@@ -353,16 +353,16 @@ main(int argc, char *argv[])
 			err(1, "chdir(%s) failed", fsvdir);
 	}
 
-	// cd to $cmdname
-	if (mkdir(cmdname, 00755) == -1) {
+	// cd to $name
+	if (mkdir(name, 00755) == -1) {
 		if (errno == EEXIST) {
 			// ok
 		} else {
-			err(1, "mkdir(%s) failed", cmdname);
+			err(1, "mkdir(%s) failed", name);
 		}
 	}
-	if (chdir(cmdname) == -1)
-		err(1, "chdir(%s) failed", cmdname);
+	if (chdir(name) == -1)
+		err(1, "chdir(%s) failed", name);
 
 	/*
 	 * Create logging pipe.
