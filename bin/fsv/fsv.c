@@ -321,9 +321,9 @@ main(int argc, char *argv[])
 	 * chdir() to the directory.
 	 */
 
-	// cd to FSV_CMDDIR_PREFIX
-	if (chdir(FSV_CMDDIR_PREFIX) == -1)
-		err(1, "chdir(%s) failed", FSV_CMDDIR_PREFIX);
+	// cd to FSV_STATE_PREFIX
+	if (chdir(FSV_STATE_PREFIX) == -1)
+		err(1, "chdir(%s) failed", FSV_STATE_PREFIX);
 
 	// cd to fsv-$euid
 	{

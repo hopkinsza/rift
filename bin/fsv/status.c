@@ -34,7 +34,7 @@ status(char c, char *name)
 		char *dir;
 
 		r = asprintf(&dir, "%s/fsv-%ld/%s",
-		    FSV_CMDDIR_PREFIX, (long)geteuid(), name);
+		    FSV_STATE_PREFIX, (long)geteuid(), name);
 		if (chdir(dir) == -1) {
 			slog(LOG_ERR, "chdir(%s) failed: %m", dir);
 			exit(1);
