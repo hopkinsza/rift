@@ -383,14 +383,19 @@ main(int argc, char *argv[])
 	if (pipe(logpipe) == -1)
 		err(1, "pipe() failed");
 
-	// open and flock info.struct
+	// open and flock(2) the lockfile
+	int fd_lock;
+	fd_lock = open("lock", O_CREAT|O_RDWR, 00600);
+	if (fd_lock == -1)
+		err(1, "open(lock) failed");
+	if (flock(fd_lock, LOCK_EX|LOCK_NB) == -1)
+		err(1, "flock(lock) failed (already running?)");
+
+	// open info.struct
 	int fd_info;
 	fd_info = open("info.struct", O_CREAT|O_RDWR, 00644);
 	if (fd_info == -1)
 		err(1, "open(info.struct) failed");
-
-	if (flock(fd_info, LOCK_EX|LOCK_NB) == -1)
-		err(1, "flock(info.struct) failed (already running?)");
 
 	/*
 	 * Daemonize if needed.

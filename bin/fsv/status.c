@@ -1,5 +1,3 @@
-#include <sys/file.h>	// for flock(2) on linux
-
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,6 +21,7 @@ status(char c, uid_t u, char *name)
 	/*
 	 * cd to the directory.
 	 */
+
 	{
 		int r;
 		char *dir;
@@ -37,7 +36,7 @@ status(char c, uid_t u, char *name)
 	}
 
 	/*
-	 * Now open info.struct and report status.
+	 * Open info.struct.
 	 */
 
 	int e;
@@ -49,17 +48,10 @@ status(char c, uid_t u, char *name)
 		exit(1);
 	}
 
-	// see if we can place a flock(2)
-	if (flock(fd_info, LOCK_EX|LOCK_NB) == -1)
-		e = 0;
-	else
-		e = 1;
+	/*
+	 * Read the data.
+	 */
 
-	// if -S, just exit now
-	if (c == 'S')
-		exit(e);
-
-	// otherwise, read the data
 	struct allinfo ai;
 
 	{
@@ -74,7 +66,10 @@ status(char c, uid_t u, char *name)
 		}
 	}
 
-	// print as needed
+	/*
+	 * Print as needed.
+	 */
+
 	if (c == 'p') {
 		printf("%ld\n", (long)ai.fsv.pid);
 		printf("%ld\n", (long)ai.chld[0].pid);
@@ -127,5 +122,8 @@ status(char c, uid_t u, char *name)
 		}
 	}
 
-	exit(e);
+	if (ai.fsv.pid > 0)
+		exit(0);
+	else
+		exit(1);
 }
