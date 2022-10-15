@@ -26,64 +26,32 @@ void termprocs(struct fsv_child[]);
 void usage();
 void write_info(int fd, struct fsv_parent *fsv, struct fsv_child chld[]);
 
-// declare externs
-int fd_devnull;
+// define externs
+int fd_devnull = -1;
 sigset_t bmask;
 
 int
 main(int argc, char *argv[])
 {
-	/*
-	 * Initialize externs.
-	 */
-
-	fd_devnull = open("/dev/null", O_RDWR);
-	if (fd_devnull == -1)
-		err(1, "open(/dev/null) failed");
-
-	sigemptyset(&bmask);
-	sigaddset(&bmask, SIGCHLD);
-	sigaddset(&bmask, SIGUSR1);
-	sigaddset(&bmask, SIGUSR2);
-	sigaddset(&bmask, SIGINT);
-	sigaddset(&bmask, SIGHUP);
-	sigaddset(&bmask, SIGTERM);
-
 	slog_open(NULL, LOG_PID|LOG_PERROR|LOG_NLOG, LOG_DAEMON);
 	slog_upto(LOG_INFO);
 
 	/*
-	 * Initialize structs.
+	 * Declare and initialize process structs.
 	 */
 
 	struct fsv_parent fsv;
+	struct fsv_child chld[2];
+
 	memset(&fsv, 0, sizeof(fsv));
 	// fsv's since value is the only one recorded with CLOCK_REALTIME
 	clock_gettime(CLOCK_REALTIME, &fsv.since);
-
-	struct fsv_child chld[2];
 
 	for (int i=0; i<2; i++) {
 		memset(&chld[i], 0, sizeof(chld[i]));
 		chld[i].pid = -1;
 		chld[i].recent_secs = 3600;
 		chld[i].max_recent_execs = 3;
-	}
-
-	/*
-	 * Initialize fsvdir name, to chdir() later.
-	 */
-
-	char fsvdir[32];
-	{
-		// build string: fsv-$euid
-		int l;
-
-		l = snprintf(fsvdir, sizeof(fsvdir), "fsv-%ld", (long)geteuid());
-		if (l == -1)
-			err(1, "snprintf");
-		else if (l >= sizeof(fsvdir))
-			errx(1, "snprintf: fsvdir too long");
 	}
 
 	/*
@@ -288,6 +256,38 @@ main(int argc, char *argv[])
 	argv += optind;
 
 	slog(LOG_DEBUG, "finished processing options");
+
+	/*
+	 * Set externs.
+	 */
+
+	fd_devnull = open("/dev/null", O_RDWR);
+	if (fd_devnull == -1)
+		err(1, "open(/dev/null) failed");
+
+	sigemptyset(&bmask);
+	sigaddset(&bmask, SIGCHLD);
+	sigaddset(&bmask, SIGUSR1);
+	sigaddset(&bmask, SIGUSR2);
+	sigaddset(&bmask, SIGINT);
+	sigaddset(&bmask, SIGHUP);
+	sigaddset(&bmask, SIGTERM);
+
+	/*
+	 * Declare/init fsvdir, to chdir() later.
+	 */
+
+	char fsvdir[32];
+	{
+		// build string: fsv-$euid
+		int l;
+
+		l = snprintf(fsvdir, sizeof(fsvdir), "fsv-%ld", (long)geteuid());
+		if (l == -1)
+			err(1, "snprintf");
+		else if (l >= sizeof(fsvdir))
+			errx(1, "snprintf: fsvdir too long");
+	}
 
 	/*
 	 * If we are just printing status, do so.
