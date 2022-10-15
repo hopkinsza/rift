@@ -1,8 +1,6 @@
 #ifndef _SLOG_H_
 #define _SLOG_H_
 
-#include <syslog.h>
-
 /*
  * DO NOT USE LOG_ODELAY with slog! It is aliased to LOG_NLOG if your libc
  * doesn't already have that defined.
