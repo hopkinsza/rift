@@ -2,7 +2,6 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 
-#include <err.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
@@ -131,16 +130,20 @@ main(int argc, char *argv[])
 				slog_upto(LOG_INFO);
 			else if (strcmp(optarg, "debug") == 0)
 				slog_upto(LOG_DEBUG);
-			else
-				errx(64, "unrecognized loglevel for -v");
+			else {
+				slog(LOG_ERR, "unrecognized loglevel for -L");
+				exit(64);
+			}
 			break;
 		case 'l':
 			if (out_mask == -1)
 				out_mask = 3;
 
 			// parse into an argv; gnarly
-			if (logstring != NULL)
-				errx(64, "-l specified more than once");
+			if (logstring != NULL) {
+				slog(LOG_ERR, "-l specified more than once");
+				exit(64);
+			}
 			for (int i=0; i<32; i++)
 				largv[i] = NULL;
 
@@ -163,8 +166,10 @@ main(int argc, char *argv[])
 				if (*c == '\0')
 					break;
 
-				if (i == 32)
-					errx(1, "too many words in -l arg");
+				if (i == 32) {
+					slog(LOG_ERR, "too many words in -l arg");
+					exit(1);
+				}
 
 				if (*c != '"') {
 					// normal argument
@@ -181,7 +186,8 @@ main(int argc, char *argv[])
 						c++;
 
 					if (*c == '\0') {
-						errx(64, "unmatched double-quote in -l arg");
+						slog(LOG_ERR, "unmatched double-quote in -l arg");
+						exit(64);
 					} else {
 						*c = '\0';
 						c++;
@@ -209,8 +215,10 @@ main(int argc, char *argv[])
 		case 'o':
 			// this is not settable to -1 with str_to_l
 			out_mask = str_to_l(optarg);
-			if (out_mask < 0 || out_mask > 3)
-				errx(64, "-m arg must be in range 0-3");
+			if (out_mask < 0 || out_mask > 3) {
+				slog(LOG_ERR, "-m arg must be in range 0-3");
+				exit(64);
+			}
 			break;
 		case 'p':
 			name = optarg;
@@ -262,8 +270,10 @@ main(int argc, char *argv[])
 	 */
 
 	fd_devnull = open("/dev/null", O_RDWR);
-	if (fd_devnull == -1)
-		err(1, "open(/dev/null) failed");
+	if (fd_devnull == -1) {
+		slog(LOG_ERR, "open(/dev/null) failed: %m");
+		exit(1);
+	}
 
 	sigemptyset(&bmask);
 	sigaddset(&bmask, SIGCHLD);
@@ -283,10 +293,13 @@ main(int argc, char *argv[])
 		int l;
 
 		l = snprintf(fsvdir, sizeof(fsvdir), "fsv-%ld", (long)geteuid());
-		if (l == -1)
-			err(1, "snprintf");
-		else if (l >= sizeof(fsvdir))
-			errx(1, "snprintf: fsvdir too long");
+		if (l == -1) {
+			slog(LOG_ERR, "snprintf: %m");
+			exit(1);
+		} else if (l >= sizeof(fsvdir)) {
+			slog(LOG_ERR, "snprintf: fsvdir too long");
+			exit(1);
+		}
 	}
 
 	/*
@@ -307,7 +320,7 @@ main(int argc, char *argv[])
 	 */
 
 	if (argc == 0) {
-		warnx("no cmd to execute");
+		slog(LOG_ERR, "no cmd to execute");
 		usage();
 		exit(64);
 	}
@@ -324,7 +337,8 @@ main(int argc, char *argv[])
 	}
 
 	if (*name == '.' || *name == '/') {
-		errx(64, "name does not make sense");
+		slog(LOG_ERR, "name does not make sense");
+		exit(64);
 	}
 
 	/*
@@ -332,8 +346,10 @@ main(int argc, char *argv[])
 	 */
 
 	// cd to FSV_STATE_PREFIX
-	if (chdir(FSV_STATE_PREFIX) == -1)
-		err(1, "chdir(%s) failed", FSV_STATE_PREFIX);
+	if (chdir(FSV_STATE_PREFIX) == -1) {
+		slog(LOG_ERR, "chdir(%s) failed: %m", FSV_STATE_PREFIX);
+		exit(1);
+	}
 
 	// cd to fsv-$euid
 	{
@@ -344,23 +360,30 @@ main(int argc, char *argv[])
 			if (errno == ENOENT) {
 				exists = 0;
 			} else {
-				err(1, "stat");
+				slog(LOG_ERR, "stat: %m");
+				exit(1);
 			}
 		}
 
 		if (exists) {
 			// verify the owner;
 			// be paranoid because this is a tmp-like directory
-			if (st.st_uid != geteuid())
-				errx(1, "unexpected owner of %s", fsvdir);
+			if (st.st_uid != geteuid()) {
+				slog(LOG_ERR, "unexpected owner of %s", fsvdir);
+				exit(1);
+			}
 		} else {
 			// create, failing if exists
-			if (mkdir(fsvdir, 00755) == -1)
-				err(1, "mkdir(%s) failed", fsvdir);
+			if (mkdir(fsvdir, 00755) == -1) {
+				slog(LOG_ERR, "mkdir(%s) failed: %m", fsvdir);
+				exit(1);
+			}
 		}
 
-		if (chdir(fsvdir) == -1)
-			err(1, "chdir(%s) failed", fsvdir);
+		if (chdir(fsvdir) == -1) {
+			slog(LOG_ERR, "chdir(%s) failed: %m", fsvdir);
+			exit(1);
+		}
 	}
 
 	// cd to $name
@@ -368,11 +391,14 @@ main(int argc, char *argv[])
 		if (errno == EEXIST) {
 			// ok
 		} else {
-			err(1, "mkdir(%s) failed", name);
+			slog(LOG_ERR, "mkdir(%s) failed: %m", name);
+			exit(1);
 		}
 	}
-	if (chdir(name) == -1)
-		err(1, "chdir(%s) failed", name);
+	if (chdir(name) == -1) {
+		slog(LOG_ERR, "chdir(%s) failed: %m", name);
+		exit(1);
+	}
 
 	/*
 	 * Create logging pipe.
@@ -380,22 +406,30 @@ main(int argc, char *argv[])
 	 */
 
 	int logpipe[2];
-	if (pipe(logpipe) == -1)
-		err(1, "pipe() failed");
+	if (pipe(logpipe) == -1) {
+		slog(LOG_ERR, "pipe() failed: %m");
+		exit(1);
+	}
 
 	// open and flock(2) the lockfile
 	int fd_lock;
 	fd_lock = open("lock", O_CREAT|O_RDWR, 00600);
-	if (fd_lock == -1)
-		err(1, "open(lock) failed");
-	if (flock(fd_lock, LOCK_EX|LOCK_NB) == -1)
-		err(1, "flock(lock) failed (already running?)");
+	if (fd_lock == -1) {
+		slog(LOG_ERR, "open(lock) failed: %m");
+		exit(1);
+	}
+	if (flock(fd_lock, LOCK_EX|LOCK_NB) == -1) {
+		slog(LOG_ERR, "flock(lock) failed (already running?): %m");
+		exit(1);
+	}
 
 	// open info.struct
 	int fd_info;
 	fd_info = open("info.struct", O_CREAT|O_RDWR, 00644);
-	if (fd_info == -1)
-		err(1, "open(info.struct) failed");
+	if (fd_info == -1) {
+		slog(LOG_ERR, "open(info.struct) failed: %m");
+		exit(1);
+	}
 
 	/*
 	 * Daemonize if needed.
@@ -407,11 +441,15 @@ main(int argc, char *argv[])
 	 */
 
 	if (do_daemon == 1) {
-		if (daemon(0, 0) == -1)
-			err(1, "daemon() failed");
+		if (daemon(0, 0) == -1) {
+			slog(LOG_ERR, "daemon() failed: %m");
+			exit(1);
+		}
 	} else if (do_daemon == 2) {
-		if (daemon(0, 1) == -1)
-			err(1, "daemon() failed");
+		if (daemon(0, 1) == -1) {
+			slog(LOG_ERR, "daemon() failed: %m");
+			exit(1);
+		}
 	}
 
 	// set my pid now, because the fork changes it
@@ -441,8 +479,10 @@ main(int argc, char *argv[])
 		sev.sigev_notify = SIGEV_SIGNAL;
 		sev.sigev_signo = SIGUSR1;
 
-		if (timer_create(CLOCK_MONOTONIC, &sev, &cmd_tid) == -1)
-			err(1, "timer_create() failed");
+		if (timer_create(CLOCK_MONOTONIC, &sev, &cmd_tid) == -1) {
+			slog(LOG_ERR, "timer_create() failed: %m");
+			exit(1);
+		}
 	}
 
 	// USR2
@@ -453,8 +493,10 @@ main(int argc, char *argv[])
 		sev.sigev_notify = SIGEV_SIGNAL;
 		sev.sigev_signo = SIGUSR2;
 
-		if (timer_create(CLOCK_MONOTONIC, &sev, &log_tid) == -1)
-			err(1, "timer_create() failed");
+		if (timer_create(CLOCK_MONOTONIC, &sev, &log_tid) == -1) {
+			slog(LOG_ERR, "timer_create() failed: %m");
+			exit(1);
+		}
 	}
 
 	/*
@@ -678,22 +720,22 @@ str_to_l(const char *str)
 	val = strtol(str, &ep, 0);
 
 	if (ep == str) {
-		warnx("string to number conversion failed for `%s': "
+		slog(LOG_ERR, "string to number conversion failed for `%s': "
 		      "not a number, or improper format", str);
 		exit(64);
 	}
 	if (*ep != '\0') {
-		warnx("string to number conversion failed for `%s': "
+		slog(LOG_ERR, "string to number conversion failed for `%s': "
 		      "trailing junk `%s'", str, ep);
 		exit(64);
 	}
 	if (errno != 0) {
-		warnx("string to number conversion failed for `%s': "
+		slog(LOG_ERR, "string to number conversion failed for `%s': "
 		      "number out of range", str);
 		exit(64);
 	}
 	if (val < 0) {
-		warnx("string to number conversion failed for `%s': "
+		slog(LOG_ERR, "string to number conversion failed for `%s': "
 		      "should be positive", str);
 		exit(64);
 	}
@@ -722,6 +764,7 @@ usage()
 {
 	fprintf(stderr, "usage: fsv [options] <cmd>\n");
 	fprintf(stderr, "Type 'man 1 fsv' for the manual.\n");
+	exit(64);
 }
 
 void
@@ -741,7 +784,6 @@ write_info(int fd, struct fsv_parent *fsv, struct fsv_child chld[])
 
 	written = write(fd, &ai, size);
 	if (written == -1 || written != size) {
-		warn("write into info.struct failed");
-		// no way to report the error outside of debugging mode
+		slog(LOG_WARNING, "write into info.struct failed: %m");
 	}
 }

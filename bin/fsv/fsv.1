@@ -330,20 +330,6 @@ for usage error, and 1 otherwise.
 Exiting due to
 .Va timeout
 being zero is considered successful.
-.Nm
-tries to do everything that could generate an error before
-it starts
-.Va cmd
-and
-.Va log ,
-and before calling
-.Xr daemon 3
-if
-.Fl b
-was specified.
-In this case, it prints the error directly to
-.Dv stderr
-and exits non-zero.
 .\"
 .\"
 .Sh EXAMPLES
