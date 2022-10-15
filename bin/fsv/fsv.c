@@ -90,15 +90,17 @@ main(int argc, char *argv[])
 	 * Process flags.
 	 */
 
+	char *name = NULL;
+
 	int do_daemon = 0;
 	int do_status = 0;
-
-	char *name = NULL;
 
 	// -1 means we are not logging at all
 	long out_mask = -1;
 
-	const char *getopt_str = "+BbdhL:l:M:m:n:o:p:R:r:S:s:t:VYy";
+	uid_t status_uid = -1;
+
+	const char *getopt_str = "+BbdhL:l:M:m:n:o:p:R:r:S:s:t:u:VYy";
 
 	struct option longopts[] = {
 		{ "background",		no_argument,		NULL,	'b' },
@@ -117,6 +119,7 @@ main(int argc, char *argv[])
 		{ "status-exit",	required_argument,	NULL,	'S' },
 		{ "status",		required_argument,	NULL,	's' },
 		{ "timeout",		required_argument,	NULL,	't' },
+		{ "uid",		required_argument,	NULL,	'u' },
 		{ "version",		no_argument,		NULL,	'V' },
 		{ "syslog-only",	no_argument,		NULL,	'Y' },
 		{ "syslog",		no_argument,		NULL,	'y' },
@@ -262,6 +265,9 @@ main(int argc, char *argv[])
 		case 't':
 			fsv.timeout = str_to_l(optarg);
 			break;
+		case 'u':
+			status_uid = (uid_t)str_to_l(optarg);
+			break;
 		case 'V':
 			printf("fsv %s\n", FSV_VERSION);
 			exit(0);
@@ -288,8 +294,12 @@ main(int argc, char *argv[])
 	 * Note that this will exit(3).
 	 */
 
-	if (do_status != 0)
-		status(do_status, name);
+	if (do_status != 0) {
+		if (status_uid == -1)
+			status_uid = geteuid();
+
+		status(do_status, status_uid, name);
+	}
 
 	/*
 	 * Verify that we have a command to run.

@@ -53,6 +53,6 @@ extern sigset_t bmask;
 /*
  * status.c
  */
-void status(char, char *);
+void status(char, uid_t, char *);
 
 #endif // !_EXTERN_H_

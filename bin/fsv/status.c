@@ -1,17 +1,10 @@
-#include <sys/file.h> // for flock(2) on linux
+#include <sys/file.h>	// for flock(2) on linux
 
-// #include <err.h>
-// #include <errno.h>
 #include <fcntl.h>
-// #include <getopt.h>
-// #include <libgen.h>
-// #include <signal.h>
-// #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-// #include <string.h>
-#include <syslog.h> // for LOG_* level constants
-#include <time.h> // for printing times
+#include <syslog.h>	// for LOG_* level constants
+#include <time.h>	// for printing times
 #include <unistd.h>
 
 #include <slog.h>
@@ -20,11 +13,12 @@
 
 /*
  * Argument `c' is a character which corresponds to a one-letter flag.
+ * Argument `u' is the uid to check status for.
  * Argument `name' is the service name.
  * This function does not return, and instead calls exit(3).
  */
 void
-status(char c, char *name)
+status(char c, uid_t u, char *name)
 {
 	/*
 	 * cd to the directory.
@@ -34,7 +28,7 @@ status(char c, char *name)
 		char *dir;
 
 		r = asprintf(&dir, "%s/fsv-%ld/%s",
-		    FSV_STATE_PREFIX, (long)geteuid(), name);
+		    FSV_STATE_PREFIX, (long)u, name);
 		if (chdir(dir) == -1) {
 			slog(LOG_ERR, "chdir(%s) failed: %m", dir);
 			exit(1);
