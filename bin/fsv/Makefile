@@ -4,8 +4,7 @@ INCS = extern.h
 
 SLOG = ../../lib/slog
 
-COPTS = -I$(SLOG)
-
+CPPFLAGS = -I$(SLOG)
 # glibc wants _GNU_SOURCE for asprintf(3)
 CPPFLAGS.status = -D_GNU_SOURCE
 

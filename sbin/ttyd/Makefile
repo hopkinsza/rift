@@ -7,8 +7,7 @@ NOMAN =
 
 SLOG = ../../lib/slog
 
-CPPFLAGS = -DUSE_UTMP
-COPTS = -I$(SLOG)
+CPPFLAGS = -DUSE_UTMP -I$(SLOG)
 
 LDADD += -lslog -lrt -lpthread -lutil
 LDFLAGS += -L$(SLOG)
