@@ -22,6 +22,7 @@
 .Op Fl t Ar secs
 .Ar cmd
 .Nm
+.Op Fl u Ar uid
 .Aq Fl p | Fl S | Fl s
 .Ar name
 .Nm
@@ -267,6 +268,12 @@ Set
 .Va timeout
 for
 .Va cmd .
+.It Fl u , Fl -uid Ar uid
+When checking status information,
+check for the specified
+.Ar uid
+instead of that returned by
+.Xr geteuid 2 .
 .It Fl V , Fl -version
 Print version and exit.
 .It Fl Y , Fl -syslog-only
