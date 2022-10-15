@@ -22,7 +22,7 @@
 int fork_chld(int, struct fsv_child *, int[], char *[], long);
 long str_to_l(const char *);
 void termprocs(struct fsv_child[]);
-void usage();
+__dead void usage();
 void write_info(int fd, struct fsv_parent *fsv, struct fsv_child chld[]);
 
 // define externs
