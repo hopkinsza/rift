@@ -132,7 +132,7 @@ main(int argc, char *argv[])
 				slog_upto(LOG_DEBUG);
 			else {
 				slog(LOG_ERR, "unrecognized loglevel for -L");
-				exit(64);
+				usage();
 			}
 			break;
 		case 'l':
@@ -142,7 +142,7 @@ main(int argc, char *argv[])
 			// parse into an argv; gnarly
 			if (logstring != NULL) {
 				slog(LOG_ERR, "-l specified more than once");
-				exit(64);
+				usage();
 			}
 			for (int i=0; i<32; i++)
 				largv[i] = NULL;
@@ -187,7 +187,7 @@ main(int argc, char *argv[])
 
 					if (*c == '\0') {
 						slog(LOG_ERR, "unmatched double-quote in -l arg");
-						exit(64);
+						usage();
 					} else {
 						*c = '\0';
 						c++;
@@ -217,7 +217,7 @@ main(int argc, char *argv[])
 			out_mask = str_to_l(optarg);
 			if (out_mask < 0 || out_mask > 3) {
 				slog(LOG_ERR, "-m arg must be in range 0-3");
-				exit(64);
+				usage();
 			}
 			break;
 		case 'p':
@@ -322,7 +322,6 @@ main(int argc, char *argv[])
 	if (argc == 0) {
 		slog(LOG_ERR, "no cmd to execute");
 		usage();
-		exit(64);
 	}
 
 	if (name == NULL) {
@@ -338,7 +337,7 @@ main(int argc, char *argv[])
 
 	if (*name == '.' || *name == '/') {
 		slog(LOG_ERR, "name does not make sense");
-		exit(64);
+		usage();
 	}
 
 	/*
@@ -722,22 +721,22 @@ str_to_l(const char *str)
 	if (ep == str) {
 		slog(LOG_ERR, "string to number conversion failed for `%s': "
 		      "not a number, or improper format", str);
-		exit(64);
+		usage();
 	}
 	if (*ep != '\0') {
 		slog(LOG_ERR, "string to number conversion failed for `%s': "
 		      "trailing junk `%s'", str, ep);
-		exit(64);
+		usage();
 	}
 	if (errno != 0) {
 		slog(LOG_ERR, "string to number conversion failed for `%s': "
 		      "number out of range", str);
-		exit(64);
+		usage();
 	}
 	if (val < 0) {
 		slog(LOG_ERR, "string to number conversion failed for `%s': "
 		      "should be positive", str);
-		exit(64);
+		usage();
 	}
 
 	return val;
