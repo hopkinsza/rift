@@ -1,3 +1,2 @@
-LIBDIR ?= /usr/lib
-INCSDIR ?= /usr/include
+INST_USR = yes
 .include "../Makefile.inc"
