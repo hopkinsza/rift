@@ -98,7 +98,7 @@ main(int argc, char *argv[])
 	 * Process flags.
 	 */
 
-	char *conf = "/etc/ttyd.conf";
+	char *conf = CONFDIR "/ttyd.conf";
 	int do_daemon = 0;
 
 	const char *getopt_str = "Bbc:dL:XxYy";

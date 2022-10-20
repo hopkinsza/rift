@@ -17,6 +17,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#define RC_SHUTDOWN CONFDIR "/rc.shutdown"
+
 /*
  * Use 4.4BSD-like logwtmp(3) from <util.h>.
  *
@@ -123,16 +125,16 @@ main(int argc, char *argv[])
 	daemon(0, 1);
 
 	if (do_rcshutdown) {
-		warnx("running /etc/rc.shutdown");
+		warnx("running " RC_SHUTDOWN);
 
 		int pid = fork();
 		if (pid == -1) {
 			warn("fork(2) failed");
 		} else if (pid == 0) {
-			if (access("/etc/rc.shutdown", X_OK) == -1) {
-				warn("could not access /etc/rc.shutdown");
+			if (access(RC_SHUTDOWN, X_OK) == -1) {
+				warn("could not access " RC_SHUTDOWN);
 			} else {
-				execl("/etc/rc.shutdown", "rc.shutdown", NULL);
+				execl(RC_SHUTDOWN, "rc.shutdown", NULL);
 			}
 		} else {
 			wait(NULL);
@@ -237,6 +239,6 @@ usage()
 	fprintf(stderr, "    -q  do not give processes a chance to shut down "
 	    "cleanly\n");
 	fprintf(stderr, "    -r  reboot\n");
-	fprintf(stderr, "    -S  do not run /etc/rc.shutdown\n");
+	fprintf(stderr, "    -S  do not run " RC_SHUTDOWN "\n");
 	exit(1);
 }
