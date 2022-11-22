@@ -15,6 +15,8 @@
 
 #include <slog.h>
 
+#include "rfconf.h"
+
 #include "extern.h"
 
 #define GETTY_TIMEOUT 30
@@ -98,7 +100,7 @@ main(int argc, char *argv[])
 	 * Process flags.
 	 */
 
-	char *conf = CONFDIR "/ttyd.conf";
+	char *conf = ETCDIR "/ttyd.conf";
 	int do_daemon = 0;
 
 	const char *getopt_str = "Bbc:dL:XxYy";

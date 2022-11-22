@@ -1,3 +1,6 @@
+RFCONF.autodep = yes
+RFCONF.h = rfconf.h
+
 TARGET_OS ?= $(.MAKE.OS)
 
 PROG = ttyd
@@ -12,4 +15,4 @@ CPPFLAGS = -DUSE_UTMP -I$(SLOG)
 LDADD += -lslog -lrt -lpthread -lutil
 LDFLAGS += -L$(SLOG)
 
-.include <bsd.prog.mk>
+.include <rf/prog.mk>

@@ -2,4 +2,4 @@ SUBDIR = hpr \
 	init \
 	ttyd
 
-.include <bsd.subdir.mk>
+.include <rf/subdir.mk>

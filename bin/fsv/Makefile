@@ -11,4 +11,4 @@ CPPFLAGS.status = -D_GNU_SOURCE
 LDADD += -lslog -lrt -lpthread
 LDFLAGS = -L$(SLOG)
 
-.include <bsd.prog.mk>
+.include <rf/prog.mk>

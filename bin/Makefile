@@ -1,3 +1,3 @@
 SUBDIR = fsv
 
-.include <bsd.subdir.mk>
+.include <rf/subdir.mk>

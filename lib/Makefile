@@ -1,3 +1,3 @@
 SUBDIR = slog
 
-.include <bsd.subdir.mk>
+.include <rf/subdir.mk>

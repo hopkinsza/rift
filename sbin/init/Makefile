@@ -1,11 +1,12 @@
+RFCONF.autodep = yes
+RFCONF.h = rfconf.h
+
 PROG = init
 SRCS = init.c debug.c
 INCS = debug.h
-
-NOMAN =
 
 #CPPFLAGS += -DDEBUG
 
 LDADD += -lrt -lpthread
 
-.include <bsd.prog.mk>
+.include <rf/prog.mk>

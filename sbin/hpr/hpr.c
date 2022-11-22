@@ -17,7 +17,9 @@
 #include <time.h>
 #include <unistd.h>
 
-#define RC_SHUTDOWN CONFDIR "/rc.shutdown"
+#include "rfconf.h"
+
+#define RC_SHUTDOWN ETCDIR "/rc.shutdown"
 
 /*
  * Use 4.4BSD-like logwtmp(3) from <util.h>.

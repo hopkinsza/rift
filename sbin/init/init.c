@@ -40,12 +40,14 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "rfconf.h"
+
 #include "debug.h"
 
 #define INIT_CONSOLE "/dev/console"
 #define INIT_PATH    _PATH_STDPATH
 
-#define INIT_RC_PATH CONFDIR "/rc"
+#define INIT_RC_PATH ETCDIR "/rc"
 #define INIT_RC_NAME "rc"
 #define INIT_SHELL_PATH "/bin/sh"
 #define INIT_SHELL_NAME "-sh"
