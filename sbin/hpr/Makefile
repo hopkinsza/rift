@@ -5,7 +5,7 @@ TARGET_OS ?= $(.MAKE.OS)
 .endif
 
 RFCONF.autodep = yes
-RFCONF.h = rfconf.h
+RFCONF.h = yes
 
 PROG = hpr
 SRCS = hpr.c reboot.$(TARGET_OS).c
