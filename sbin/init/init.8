@@ -1,0 +1,91 @@
+.Dd
+.Dt INIT 8
+.Os
+.\"
+.\"
+.Sh NAME
+.Nm init
+.Nd the father of all processes
+.\"
+.\"
+.Sh SYNOPSIS
+.Nm
+.Op Fl s
+.\"
+.\"
+.Sh DESCRIPTION
+.Nm
+is PID 1, the first process started by the kernel.
+It has two jobs:
+.Bl -enum
+.It
+To commence
+.Dv MULTIUSER
+or
+.Dv SINGLEUSER
+operation by executing
+.Pa /etc/rc
+or
+.Pa /etc/rc.single
+respectively.
+The default is
+.Dv MULTIUSER
+mode.
+.It
+To call
+.Xr wait 2
+on processes which have been re-parented to PID 1
+because their former parent has exited.
+.El
+.Pp
+See
+.Sx SIGNALS
+for how
+.Nm
+responds to signals.
+.Pp
+The options are as follows:
+.Pp
+.Bl -tag -width Ds
+.It Fl s
+Start in
+.Dv SINGLEUSER
+mode.
+.El
+.\"
+.\"
+.Sh FILES
+.Bl -tag -width Ds
+.It Pa /etc/rc
+Program to run for
+.Dv MULTIUSER
+mode.
+.It Pa /etc/rc.single
+Program to run for
+.Dv SINGLEUSER
+mode.
+If it cannot be executed, run
+.Pa /bin/sh
+instead.
+.El
+.\"
+.\"
+.Sh SIGNALS
+.Bl -tag -width Ds
+.It Dv SIGTERM
+Kill all existing processes and switch to the opposite mode.
+.It Dv SIGUSR1
+By default,
+.Nm
+will send itself a
+.Dv SIGTERM
+if
+.Em rc
+or
+.Em rc.single
+exit.
+Sending this signal disables this behavior.
+.It Dv SIGUSR2
+Opposite of
+.Dv SIGUSR1 .
+.El
