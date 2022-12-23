@@ -137,7 +137,7 @@ main(int argc, char *argv[])
 		else if (strcmp(optarg, "debug") == 0)
 			slog_upto(LOG_DEBUG);
 		else
-			errx(64, "unrecognized loglevel for -v");
+			errx(64, "unrecognized loglevel for -L");
 		break;
 	case 'Y':
 		slog_open(NULL, LOG_PID, LOG_AUTH);
