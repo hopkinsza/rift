@@ -74,7 +74,7 @@ instead.
 .Bl -tag -width Ds
 .It Dv SIGTERM
 Kill all existing processes and switch to the opposite mode.
-.It Dv SIGUSR1
+.It Dv SIGTSTP
 By default,
 .Nm
 will send itself a
@@ -85,7 +85,7 @@ or
 .Em rc.single
 exit.
 Sending this signal disables this behavior.
-.It Dv SIGUSR2
+.It Dv SIGHUP
 Opposite of
-.Dv SIGUSR1 .
+.Dv SIGTSTP .
 .El

@@ -134,10 +134,10 @@ main(int argc, char *argv[])
 		reset_procs();
 		cpid = spawn_for(state);
 		break;
-	case SIGUSR1:
+	case SIGTSTP:
 		do_respawn = 0;
 		break;
-	case SIGUSR2:
+	case SIGHUP:
 		do_respawn = 1;
 		break;
 	}
@@ -170,7 +170,7 @@ spawn_for(enum states s)
 
 			// If you don't have either of those, you are seriously screwed.
 			// Tell init not to bother re-execing anymore.
-			kill(1, SIGUSR1);
+			kill(1, SIGTSTP);
 			warn("(child) could not exec " INIT_SINGLE_PATH " or /bin/sh");
 			fprintf(stderr, "\n");
 			fprintf(stderr, "your system is screwed;\n");
