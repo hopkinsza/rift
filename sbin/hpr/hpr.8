@@ -6,9 +6,9 @@
 .Sh NAME
 .Nm hpr ,
 .Nm halt ,
-.Nm reboot ,
-.Nm poweroff
-.Nd stopping, restarting, and powering down the system
+.Nm poweroff ,
+.Nm reboot
+.Nd stopping, powering down, and restarting the system
 .\"
 .\"
 .Sh SYNOPSIS
@@ -29,8 +29,11 @@ Before running the
 system call,
 they first attempt to execute the file
 .Pa /etc/rc.shutdown ,
-flush the file system cache to disk, and
-send all running processes a SIGTERM.
+send
+.Xr init 8
+a SIGTSTP signal,
+get all running processes to shutdown cleanly, and
+flush the file system cache to disk.
 The action is logged by sending a message via
 .Xr syslog 3
 and by entering a shutdown record into the login accounting file \(em see
@@ -47,10 +50,6 @@ This is the default if called as
 .It Fl l
 Suppress sending a message via
 .Xr syslog 3 .
-.It Fl n
-Do not flush the file system cache.
-This option should probably not be used unless
-a disk or processor is on fire.
 .It Fl p
 Power down the system.
 This is the default if called as
@@ -59,9 +58,6 @@ or anything other than
 .Nm halt
 or
 .Nm reboot .
-.It Fl q
-Do not give processes a chance to shut down cleanly.
-This option should probably not be used.
 .It Fl r
 Reboot the system.
 This is the default if called as
@@ -69,6 +65,19 @@ This is the default if called as
 .It Fl S
 Do not run
 .Pa /etc/rc.shutdown .
+.El
+.Pp
+Options which are not normally used,
+but are provided for compatibility with
+.Bx 4.4 :
+.Bl -tag -width Ds
+.It Fl n
+Do not flush the file system cache.
+This option should probably not be used unless
+a disk or processor is on fire.
+.It Fl q
+Do not give processes a chance to shut down cleanly.
+This option should probably not be used.
 .El
 .Pp
 Normally, the

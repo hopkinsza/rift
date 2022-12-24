@@ -173,6 +173,7 @@ main(int argc, char *argv[])
 
 	// this is where the fun begins
 	block_all_sigs();
+	kill(1, SIGTSTP);
 
 	if (do_clean) {
 		warnx("waiting up to %d seconds for processes to exit...",
