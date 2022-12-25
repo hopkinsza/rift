@@ -165,7 +165,8 @@ spawn_for(enum states s)
 			exit(1);
 		} else if (s == SINGLEUSER) {
 			execl(INIT_SINGLE_PATH, INIT_SINGLE_NAME, NULL);
-			// fallback to a shell
+			warn("(child) exec " INIT_SINGLE_PATH "failed");
+			warnx("(child) falling back to /bin/sh");
 			execl("/bin/sh", "-sh", NULL);
 
 			// If you don't have either of those, you are seriously screwed.
