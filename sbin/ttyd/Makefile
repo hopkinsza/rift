@@ -1,5 +1,5 @@
-RFCONF.autodep = yes
-RFCONF.h = yes
+CONF.autodep = yes
+CONF.h = yes
 
 TARGET_OS ?= $(.MAKE.OS)
 

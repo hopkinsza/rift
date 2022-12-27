@@ -4,8 +4,8 @@ TARGET_OS ?= $(.MAKE.OS)
 .error unsupported platform
 .endif
 
-RFCONF.autodep = yes
-RFCONF.h = yes
+CONF.autodep = yes
+CONF.h = yes
 
 PROG = hpr
 SRCS = hpr.c reboot.$(TARGET_OS).c
