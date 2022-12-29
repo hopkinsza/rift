@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: 0BSD
  */
 
-#include <sys/ioctl.h>
+#include <sys/param.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
 
@@ -16,6 +16,15 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+
+#if defined(BSD)
+#include <util.h>
+#endif
+
+#if defined(__linux__)
+// glibc has login_tty(3) in utmp.h
+#include <utmp.h>
+#endif
 
 #include "rfconf.h"
 
@@ -33,7 +42,6 @@ enum states {
 int spawn_for(enum states);
 int wait_for_upto(int);
 void hang();
-void init_child();
 void reset_procs();
 
 int fd_console;
@@ -41,6 +49,11 @@ pid_t cpid;	// pid of rc or single user shell
 sigset_t bmask;	// signal block mask -- full
 
 const struct timespec one_sec = { 1, 0 };
+
+void
+nop(int i)
+{
+}
 
 int
 main(int argc, char *argv[])
@@ -52,26 +65,38 @@ main(int argc, char *argv[])
 	 * Initial setup.
 	 */
 
-	chdir("/");
-
 	// Block all signals.
 	sigfillset(&bmask);
 	sigprocmask(SIG_BLOCK, &bmask, NULL);
 
-	// Create initial session, set default PATH and umask.
-	setsid();
+	// For all signals we deal with, set its handler to a no-op function.
+	{
+		struct sigaction sa;
+		memset(&sa, 0, sizeof(sa));
+
+		sa.sa_flags = SA_NOCLDSTOP;
+		sa.sa_handler = nop;
+		sigaction(SIGALRM, &sa, NULL);
+		sigaction(SIGCHLD, &sa, NULL);
+		sigaction(SIGTERM, &sa, NULL);
+		sigaction(SIGTSTP, &sa, NULL);
+		sigaction(SIGHUP, &sa, NULL);
+	}
+
+	// Other random setup.
+	chdir("/");
 	setenv("PATH", _PATH_STDPATH, 1);
 	umask(0022);
 
-	// Open fd for /dev/console and make sure STD{IN,OUT,ERR} use it.
+	// Open fd for /dev/console.
 	fd_console = open("/dev/console", O_RDWR|O_NOCTTY);
 	if (fd_console == -1) {
 		warn("open /dev/console failed");
 		hang();
 	}
-	dup2(fd_console, 0);
-	dup2(fd_console, 1);
-	dup2(fd_console, 2);
+	// login_tty(3) will call setsid(2), make the console the controlling tty,
+	// and set up STD{IN,OUT,ERR}
+	login_tty(fd_console);
 
 	/*
 	 * Process flags, then spawn the first process.
@@ -157,7 +182,8 @@ spawn_for(enum states s)
 	}
 
 	if (pid == 0) {
-		init_child();
+		sigprocmask(SIG_UNBLOCK, &bmask, NULL);
+		login_tty(fd_console);
 
 		if (s == MULTIUSER) {
 			execl(INIT_RC_PATH, INIT_RC_NAME, NULL);
@@ -219,19 +245,6 @@ hang()
 	}
 
 	exit(1);
-}
-
-/*
- * Initialization to be run in a child process.
- */
-void
-init_child()
-{
-	sigprocmask(SIG_UNBLOCK, &bmask, NULL);
-	if (setsid() == -1)
-		warn("(child) setsid(2) failed");
-	if (ioctl(fd_console, TIOCSCTTY, 1) == -1)
-		warn("(child) ioctl to make /dev/console the ctty failed");
 }
 
 /*
