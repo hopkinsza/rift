@@ -6,11 +6,11 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 
-#include <err.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <paths.h>
 #include <signal.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -43,8 +43,9 @@ int spawn_for(enum states);
 int wait_for_upto(int);
 void hang();
 void reset_procs();
+void w(const char *, ...);
+void wx(const char *, ...);
 
-int fd_console;
 pid_t cpid;	// pid of rc or single user shell
 sigset_t bmask;	// signal block mask -- full
 
@@ -70,6 +71,8 @@ main(int argc, char *argv[])
 	sigprocmask(SIG_BLOCK, &bmask, NULL);
 
 	// For all signals we deal with, set its handler to a no-op function.
+	// On BSD, it seems a signal will not be posted to us if it's ignored,
+	// even if it is blocked.
 	{
 		struct sigaction sa;
 		memset(&sa, 0, sizeof(sa));
@@ -83,20 +86,13 @@ main(int argc, char *argv[])
 		sigaction(SIGHUP, &sa, NULL);
 	}
 
+	// Create initial session.
+	setsid();
+
 	// Other random setup.
 	chdir("/");
 	setenv("PATH", _PATH_STDPATH, 1);
 	umask(0022);
-
-	// Open fd for /dev/console.
-	fd_console = open("/dev/console", O_RDWR|O_NOCTTY);
-	if (fd_console == -1) {
-		warn("open /dev/console failed");
-		hang();
-	}
-	// login_tty(3) will call setsid(2), make the console the controlling tty,
-	// and set up STD{IN,OUT,ERR}
-	login_tty(fd_console);
 
 	/*
 	 * Process flags, then spawn the first process.
@@ -111,7 +107,7 @@ main(int argc, char *argv[])
 			state = SINGLEUSER;
 			break;
 		default:
-			warnx("unrecognized flag: -%c", ch);
+			wx("unrecognized flag: -%c", ch);
 			break;
 		}
 	}
@@ -150,10 +146,10 @@ main(int argc, char *argv[])
 	case SIGTERM:
 		if (state == MULTIUSER) {
 			state = SINGLEUSER;
-			warnx("entering singleuser mode");
+			wx("entering singleuser mode");
 		} else if (state == SINGLEUSER) {
 			state = MULTIUSER;
-			warnx("entering multiuser mode");
+			wx("entering multiuser mode");
 		}
 
 		reset_procs();
@@ -177,28 +173,39 @@ spawn_for(enum states s)
 	int pid = fork();
 
 	if (pid == -1) {
-		warn("fork failed");
+		w("fork failed");
 		hang();
 	}
 
 	if (pid == 0) {
+		// Unblock signals.
 		sigprocmask(SIG_UNBLOCK, &bmask, NULL);
-		login_tty(fd_console);
+
+		// Call login_tty(3) on constty or console.
+		// It will call setsid(2), set up STD{IN,OUT,ERR},
+		// set the controlling tty, and then close fd if needed.
+		int fd;
+#if defined(_PATH_CONSTTY)
+		fd = open(_PATH_CONSTTY, O_RDWR|O_NOCTTY);
+#else
+		fd = open(_PATH_CONSOLE, O_RDWR|O_NOCTTY);
+#endif
+		login_tty(fd);
 
 		if (s == MULTIUSER) {
 			execl(INIT_RC_PATH, INIT_RC_NAME, NULL);
-			warn("(child) exec " INIT_RC_PATH " failed");
+			w("(child) exec " INIT_RC_PATH " failed");
 			exit(1);
 		} else if (s == SINGLEUSER) {
 			execl(INIT_SINGLE_PATH, INIT_SINGLE_NAME, NULL);
-			warn("(child) exec " INIT_SINGLE_PATH " failed");
-			warnx("(child) falling back to /bin/sh");
+			w("(child) exec " INIT_SINGLE_PATH " failed");
+			wx("(child) falling back to /bin/sh");
 			execl("/bin/sh", "-sh", NULL);
 
 			// If you don't have either of those, you are seriously screwed.
 			// Tell init not to bother re-execing anymore.
 			kill(1, SIGTSTP);
-			warn("(child) could not exec " INIT_SINGLE_PATH " or /bin/sh");
+			w("(child) could not exec " INIT_SINGLE_PATH " or /bin/sh");
 			fprintf(stderr, "\n");
 			fprintf(stderr, "your system is screwed;\n");
 			fprintf(stderr, "you will need to perform a daring rescue or reinstall");
@@ -253,7 +260,7 @@ hang()
 void
 reset_procs()
 {
-	warnx("waiting up to 10 seconds for processes to exit...");
+	wx("waiting up to 10 seconds for processes to exit...");
 
 	kill(-1, SIGTERM);
 	kill(-1, SIGHUP);
@@ -265,5 +272,40 @@ reset_procs()
 	if (wait_for_upto(2) == 0)
 		return;
 
-	warnx("some processes would not die; ps axl advised");
+	wx("some processes would not die; ps axl advised");
+}
+
+/*
+ * warn(3) and warnx(3) clones.
+ * They open a new fd to the console to print to every time;
+ * on BSD, it seems all existing file descriptors to a tty get yiffed if
+ * its controlling process exits.
+ */
+void
+w(const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+
+	int fd = open(_PATH_CONSOLE, O_RDWR|O_NOCTTY);
+	dprintf(fd, "init: ");
+	vdprintf(fd, fmt, ap);
+	dprintf(fd, ": %s\n", strerror(errno));
+	close(fd);
+
+	va_end(ap);
+}
+void
+wx(const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+
+	int fd = open(_PATH_CONSOLE, O_RDWR|O_NOCTTY);
+	dprintf(fd, "init: ");
+	vdprintf(fd, fmt, ap);
+	dprintf(fd, "\n");
+	close(fd);
+
+	va_end(ap);
 }
