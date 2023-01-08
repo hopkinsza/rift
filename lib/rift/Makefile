@@ -1,5 +1,5 @@
 FILES = functions
-FILESDIR = /lib/rift
-FILESMODE = 755
+FILESDIR = ${LIBDIR}/rift
+FILESMODE = ${EDITMODE}
 
-.include <rf/prog.mk>
+.include <rf/all.mk>
