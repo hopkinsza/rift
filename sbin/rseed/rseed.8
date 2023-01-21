@@ -1,0 +1,34 @@
+.Dd
+.Dt RSEED 8
+.Os
+.\"
+.\"
+.Sh NAME
+.Nm rseed
+.Nd load and/or save entropy file
+.\"
+.\"
+.Sh SYNOPSIS
+.Nm
+.Op Fl ls
+.Op Ar file
+.\"
+.\"
+.Sh DESCRIPTION
+.Nm
+loads and/or saves 64 bytes of entropy to a file.
+The default is to first load and then save.
+The default file is
+.Pa /var/db/random-seed .
+.Pp
+The following options are available:
+.Bl -tag -width Ds
+.It Fl l
+Only load entropy from the file.
+.It Fl s
+Only save entropy to the file.
+.El
+.\"
+.\"
+.Sh EXIT STATUS
+.Ex -std rseed

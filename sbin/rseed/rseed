@@ -1,0 +1,62 @@
+#!/bin/ksh
+#
+# Load and/or save 64 bytes of entropy to a file (default /var/db/random-seed).
+#
+
+function usage {
+	print -u2 "usage: rseed [-l|-s] [file]"
+	exit 64
+}
+
+do_load=yes
+do_save=yes
+
+file=/var/db/random-seed
+
+while getopts 'sl' f; do
+	case $f in
+	l)
+		do_load=yes
+		do_save=no
+		;;
+	s)
+		do_save=yes
+		do_load=no
+		;;
+	*)
+		usage
+		;;
+	esac
+done
+shift $(( OPTIND - 1 ))
+
+case $# in
+0)
+	file=/var/db/random-seed
+	;;
+1)
+	file=$1
+	;;
+*)
+	usage
+	;;
+esac
+
+#
+# Begin real work.
+#
+
+exitval=0
+
+if [[ $do_load == yes ]]; then
+	cat "$file" >/dev/urandom
+	[[ $? != 0 ]] && exitval=1
+fi
+
+if [[ $do_save == yes ]]; then
+	umask 077
+	dd if=/dev/urandom bs=64 count=1 >"$file" 2>/dev/null
+	[[ $? != 0 ]] && exitval=1
+fi
+
+exit $exitval
