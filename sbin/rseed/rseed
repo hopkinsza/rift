@@ -4,7 +4,7 @@
 #
 
 function usage {
-	print -u2 "usage: rseed [-l|-s] [file]"
+	print -u2 "usage: rseed [-ls] [file]"
 	exit 64
 }
 
@@ -13,7 +13,7 @@ do_save=yes
 
 file=/var/db/random-seed
 
-while getopts 'sl' f; do
+while getopts 'ls' f; do
 	case $f in
 	l)
 		do_load=yes
