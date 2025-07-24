@@ -5,7 +5,7 @@
 .\"
 .Sh NAME
 .Nm init
-.Nd the father of all processes
+.Nd the allfather
 .\"
 .\"
 .Sh SYNOPSIS
@@ -20,17 +20,14 @@ It has two jobs:
 .Bl -enum
 .It
 To commence
-.Dv MULTIUSER
+.Dv multi-user
 or
-.Dv SINGLEUSER
+.Dv single-user
 operation by executing
 .Pa /etc/rc
 or
 .Pa /etc/rc.single
 respectively.
-The default is
-.Dv MULTIUSER
-mode.
 .It
 To call
 .Xr wait 2
@@ -38,18 +35,41 @@ on processes which have been re-parented to PID 1
 because their former parent has exited.
 .El
 .Pp
-See
-.Sx SIGNALS
-for how
+In standard operation,
 .Nm
-responds to signals.
+starts in
+.Dv multi-user
+mode and spawns
+.Pa /etc/rc
+as a subprocess.
+If
+.Pa /etc/rc
+could not be executed or exits non-zero,
+.Nm
+enters
+.Dv single-user
+mode and attempts to spawn
+.Pa /etc/rc.single ,
+with
+.Pa /bin/sh
+as the last fallback \(em
+if even this fails,
+.Nm
+will hang forever, patiently waiting for manual intervention.
+Finally, if the
+.Dv single-user
+process exits for any reason,
+.Nm
+will resume
+.Dv multi-user
+operation.
 .Pp
 The options are as follows:
 .Pp
 .Bl -tag -width Ds
 .It Fl s
 Start in
-.Dv SINGLEUSER
+.Dv single-user
 mode.
 .El
 .\"
@@ -58,34 +78,53 @@ mode.
 .Bl -tag -width Ds
 .It Pa /etc/rc
 Program to run for
-.Dv MULTIUSER
+.Dv multi-user
 mode.
 .It Pa /etc/rc.single
 Program to run for
-.Dv SINGLEUSER
+.Dv single-user
 mode.
-If it cannot be executed, run
+If it cannot be executed, try
 .Pa /bin/sh
 instead.
+.It Pa /etc/rc.int
+Program to run when
+.Nm
+receives a
+.Dv SIGINT .
 .El
 .\"
 .\"
 .Sh SIGNALS
 .Bl -tag -width Ds
 .It Dv SIGTERM
-Kill all existing processes and switch to the opposite mode.
-.It Dv SIGTSTP
-By default,
-.Nm
-will send itself a
-.Dv SIGTERM
-if
-.Em rc
+Terminate all existing processes and enter single-user mode.
+.It Dv SIGINT
+Try to run
+.Pa /etc/rc.int ;
+if the
+.Xr fork 2
 or
-.Em rc.single
-exit.
-Sending this signal disables this behavior.
+.Xr execl 2
+fails, go
+.Dv single-user .
+The key combination
+.Ql ctrl+alt+del
+sends a
+.Dv SIGINT
+(or may be configured to do so) to PID 1 on some systems.
+.It Dv SIGTSTP
+Tell
+.Nm
+to do nothing if
+.Pa /etc/rc
+or the
+.Dv single-user
+process exit.
+This hook is used by
+.Xr hpr 8 .
 .It Dv SIGHUP
 Opposite of
-.Dv SIGTSTP .
+.Dv SIGTSTP
+\(em re-enable default behavior.
 .El
