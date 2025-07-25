@@ -38,10 +38,10 @@ int spawn_rc_int();
 int wait_while_procs(int);
 void smite();
 
-void notice (const char *, ...);
-void warning(const char *, ...);
-void error  (const char *, ...);
-void l(int,  const char *, va_list);
+#define notice(...)  l(LOG_NOTICE,  __VA_ARGS__)
+#define warning(...) l(LOG_WARNING, __VA_ARGS__)
+#define error(...)   l(LOG_ERR,     __VA_ARGS__)
+void l(int, const char *, ...);
 
 void nop(int i) {}
 
@@ -436,43 +436,27 @@ smite()
 }
 
 /*
- * Logging functions.
- * They open a new fd to the console to print to every time;
+ * Logging to the console and syslog.
+ * Opens a new fd to the console to print to every time;
  * existing file descriptors to a tty get yiffed if
  * its controlling process exits.
  */
 void
-notice(const char *fmt, ...)
+l(int priority, const char *fmt, ...)
 {
 	va_list ap;
+
+	// console
 	va_start(ap, fmt);
-	l(LOG_NOTICE, fmt, ap);
-	va_end(ap);
-}
-void
-warning(const char *fmt, ...)
-{
-	va_list ap;
-	va_start(ap, fmt);
-	l(LOG_WARNING, fmt, ap);
-	va_end(ap);
-}
-void
-error(const char *fmt, ...)
-{
-	va_list ap;
-	va_start(ap, fmt);
-	l(LOG_ERR, fmt, ap);
-	va_end(ap);
-}
-void
-l(int priority, const char *fmt, va_list ap)
-{
 	int fd = open(_PATH_CONSOLE, O_RDWR|O_CLOEXEC|O_NOCTTY);
 	dprintf(fd, "init: ");
 	vdprintf(fd, fmt, ap);
 	dprintf(fd, "\n");
 	close(fd);
+	va_end(ap);
 
+	// syslog
+	va_start(ap, fmt);
 	vsyslog(priority, fmt, ap);
+	va_end(ap);
 }
