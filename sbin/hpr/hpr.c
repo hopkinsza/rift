@@ -2,11 +2,9 @@
  * SPDX-License-Identifier: 0BSD
  */
 
-#include <sys/param.h>
 #include <sys/wait.h>
 
 #include <err.h>
-#include <getopt.h>
 #include <libgen.h>
 #include <pwd.h>
 #include <signal.h>
@@ -19,70 +17,41 @@
 
 #include "rfconf.h"
 
-#define RC_SHUTDOWN ETCDIR "/rc.shutdown"
-
-/*
- * Use 4.4BSD-like logwtmp(3) from <util.h>.
- *
- * Linux (glibc) has this in <utmp.h>.
- */
-
-#ifdef BSD
-#if defined(USE_UTMP) || defined(USE_UTMPX)
-#include <util.h>
-#endif
-#endif
-
-#ifdef __linux__
-#ifdef USE_UTMP
-#include <utmp.h>
-#endif
-#endif
+#define RC_SHUTDOWN_PATH ETCDIR "/rc.shutdown"
+#define RC_SHUTDOWN_NAME "rc.shutdown"
 
 #include "osind_reboot.h"
 
-#ifndef HPR_GRACE
+#if !defined(HPR_GRACE)
 #define HPR_GRACE 5
 #endif
 
-int wait_for_upto(int);
-void block_all_sigs();
+int sleep_while_procs(int);
 void usage();
 
 int
 main(int argc, char *argv[])
 {
-	char *progname;
-	char *user;
-
-	// ascii h, p, or r
-	int action;
-
-	int do_clean = 1;
-	int do_log = 1;
-	int do_rcshutdown = 1;
-	int do_sync  = 1;
-
 	if (geteuid() != 0)
 		errx(1, "must run as root");
 
-	// try to grab a username for later logging
-	user = getlogin();
-	if (user == NULL) {
-		struct passwd *p;
-		p = getpwuid(getuid());
+	/*
+	 * Inspect argv[0] and set default action accordingly.
+	 */
 
-		if (p == NULL) {
-			user = "???";
-		} else {
-			user = p->pw_name;
-		}
-	}
+	int action = 'p'; // ascii h, p, or r
+	char *progname;
 
-	progname = malloc(strlen(argv[0]) + 2);
-	if (progname == NULL)
-		err(1, "malloc(3) failed");
-	progname = basename(argv[0]);
+	// Set progname.
+	// Have to make a copy of argv[0] since basename() can modify its arg,
+	// and this can never be freed...
+	// BSDs and Solaris could just use getprogname();
+	// tempting to require libbsd on linux for this.
+	char *arg0 = malloc(strlen(argv[0]) + 1);
+	if (arg0 == NULL)
+		err(1, "malloc() failed");
+	strcpy(arg0, argv[0]);
+	progname = basename(arg0);
 
 	if (strcmp(progname, "halt") == 0)
 		action = 'h';
@@ -90,9 +59,16 @@ main(int argc, char *argv[])
 		action = 'p';
 	else if (strcmp(progname, "reboot") == 0)
 		action = 'r';
-	else
-		action = 'p';
 
+	/*
+	 * Process flags.
+	 */
+
+	int do_clean = 1;
+	int do_log = 1;
+	int do_rcshutdown = 1;
+	int do_sync  = 1;
+{
 	int ch;
 	while ((ch = getopt(argc, argv, "hlnpqrS")) != -1) {
 		switch(ch) {
@@ -122,29 +98,41 @@ main(int argc, char *argv[])
 			break;
 		}
 	}
-
-	// note: defined in <unistd.h> instead of <stdlib.h> in glibc
-	daemon(0, 1);
+}
 
 	if (do_rcshutdown) {
-		warnx("running " RC_SHUTDOWN);
+		warnx("running " RC_SHUTDOWN_PATH);
 
-		int pid = fork();
-		if (pid == -1) {
-			warn("fork(2) failed");
-		} else if (pid == 0) {
-			if (access(RC_SHUTDOWN, X_OK) == -1) {
-				warn("could not access " RC_SHUTDOWN);
-			} else {
-				execl(RC_SHUTDOWN, "rc.shutdown", NULL);
-			}
-		} else {
+		pid_t pid;
+		switch(pid = fork()) {
+		case -1:
+			warn("fork() failed");
+			break;
+		case 0:
+			// child
+			execl(RC_SHUTDOWN_PATH, RC_SHUTDOWN_NAME, NULL);
+			err(1, "child: exec " RC_SHUTDOWN_PATH " failed");
+			break;
+		default:
+			// parent
 			wait(NULL);
+			break;
 		}
 	}
 
 	if (do_log) {
-		openlog(progname, LOG_CONS, LOG_AUTH);
+		// getlogin(3) can report user more accurately if 'su' was used.
+		char *user = getlogin();
+		if (user == NULL) {
+			struct passwd *p = getpwuid(getuid());
+			if (p == NULL) {
+				user = "???";
+			} else {
+				user = p->pw_name;
+			}
+		}
+
+		openlog(NULL, 0, LOG_AUTH);
 		switch (action) {
 		case 'h':
 			syslog(LOG_CRIT, "halted by %s", user);
@@ -160,28 +148,32 @@ main(int argc, char *argv[])
 	}
 
 	/*
-	 * Write wtmp/wtmpx record.
+	 * This is where the fun begins.
 	 */
 
-#ifdef USE_UTMP
-	logwtmp("~", "shutdown", "");
-#endif
-#ifdef USE_UTMPX
-	// NetBSD extension
-	logwtmpx("~", "shutdown", 0, INIT_PROCESS);
-#endif
+	// ignore relevant signals
+{
+	struct sigaction sa = { .sa_handler = SIG_IGN };
+	sigaction(SIGHUP,  &sa, NULL);
+	sigaction(SIGINT,  &sa, NULL);
+	sigaction(SIGQUIT, &sa, NULL);
+	sigaction(SIGTERM, &sa, NULL);
+	sigaction(SIGPIPE, &sa, NULL);
+	sigaction(SIGTSTP, &sa, NULL);
+}
 
-	// this is where the fun begins
-	block_all_sigs();
+	// tell init to not respawn processes
 	kill(1, SIGTSTP);
 
 	if (do_clean) {
 		warnx("waiting up to %d seconds for processes to exit...",
 		    HPR_GRACE);
+		// send TERM 0.1 seconds before HUP
 		kill(-1, SIGTERM);
+		nanosleep(&(struct timespec){0,100000000}, NULL);
 		kill(-1, SIGHUP);
 		kill(-1, SIGCONT);
-		wait_for_upto(HPR_GRACE);
+		sleep_while_procs(HPR_GRACE);
 	}
 
 	if (do_sync) {
@@ -189,46 +181,41 @@ main(int argc, char *argv[])
 		sync();
 	}
 
-	if (action == 'h') {
+	switch (action) {
+	case 'h':
 		warnx("halt");
 		osind_reboot(OSIND_RB_HALT);
-	} else if (action == 'p') {
+		break;
+	case 'p':
 		warnx("poweroff");
 		osind_reboot(OSIND_RB_POWEROFF);
-	} else if (action == 'r') {
+		break;
+	case 'r':
 		warnx("reboot");
 		osind_reboot(OSIND_RB_REBOOT);
-	} else {
+		break;
+	default:
 		// should never happen
+		kill(1, SIGHUP);
 		abort();
+		break;
 	}
 }
 
 int
-wait_for_upto(int secs)
+sleep_while_procs(int timeout)
 {
-	struct timespec one_sec = { 1, 0 };
-
-	for (int i=0; i<secs; i++) {
-		nanosleep(&one_sec, NULL);
-
-		if (kill(-1, 0) == -1) {
-			// all processes have exited
+	for (int i=0; i<timeout; i++) {
+		if(kill(-1, 0) == -1) {
+			// no processes remain
 			return 0;
 		}
+		// processes remain
+		nanosleep(&(struct timespec){1,0}, NULL);
 	}
 
 	// processes remain
 	return -1;
-}
-
-void
-block_all_sigs()
-{
-	sigset_t bmask;
-
-	sigfillset(&bmask);
-	sigprocmask(SIG_BLOCK, &bmask, NULL);
 }
 
 void
@@ -242,6 +229,6 @@ usage()
 	fprintf(stderr, "    -q  do not give processes a chance to shut down "
 	    "cleanly\n");
 	fprintf(stderr, "    -r  reboot\n");
-	fprintf(stderr, "    -S  do not run " RC_SHUTDOWN "\n");
+	fprintf(stderr, "    -S  do not run " RC_SHUTDOWN_PATH "\n");
 	exit(1);
 }
