@@ -34,12 +34,18 @@ send
 a SIGTSTP signal,
 get all running processes to shutdown cleanly, and
 flush the file system cache to disk.
-The action is logged by sending a message via
-.Xr syslog 3
-and by entering a shutdown record into the login accounting file \(em see
+The action is logged by
+.Xr syslog 3 .
+This implementation does
+.Em not
+enter a shutdown record into the login accounting file
+(see
 .Xr utmp 5
-and
-.Xr utmpx 5 .
+and/or
+.Xr utmpx 5 )
+\(em
+this should be done in
+.Pa rc.shutdown .
 .Pp
 The options are as follows:
 .Bl -tag -width Ds
@@ -100,8 +106,6 @@ binary.
 .Sh SEE ALSO
 .Xr reboot 2
 .Xr sync 2
-.Xr utmp 5
-.Xr utmpx 5
 .Xr shutdown 8
 .Sh HISTORY
 A
