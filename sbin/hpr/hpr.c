@@ -39,7 +39,7 @@ main(int argc, char *argv[])
 	 * Inspect argv[0] and set default action accordingly.
 	 */
 
-	int action = 'p'; // ascii h, p, or r
+	int action = 'r'; // ascii h, p, or r
 	char *progname;
 
 	// Set progname.
