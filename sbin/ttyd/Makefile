@@ -1,6 +1,7 @@
 CONF.autodep = yes
 CONF.h = yes
 
+# TODO: move into build system
 TARGET_OS ?= $(.MAKE.OS)
 
 PROG = ttyd

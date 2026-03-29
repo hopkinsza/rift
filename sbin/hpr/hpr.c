@@ -42,6 +42,7 @@ main(int argc, char *argv[])
 	int action = 'r'; // ascii h, p, or r
 	char *progname;
 
+	// TODO: use undocumented(?) extern char *__progname, works in glibc
 	// Set progname.
 	// Have to make a copy of argv[0] since basename() can modify its arg,
 	// and this can never be freed...
@@ -150,6 +151,8 @@ main(int argc, char *argv[])
 	/*
 	 * This is where the fun begins.
 	 */
+
+	// TODO: maybe should daemonize after all, otherwise shell doesn't exit?
 
 	// ignore relevant signals
 {
